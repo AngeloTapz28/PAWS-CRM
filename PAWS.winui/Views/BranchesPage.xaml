@@ -1,0 +1,334 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Page
+    x:Class="PAWS.winui.Views.BranchesPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    Loaded="Page_Loaded"
+    Unloaded="Page_Unloaded">
+
+    <Page.Resources>
+        <Style TargetType="TextBox" BasedOn="{StaticResource PawsTextBox}"/>
+    </Page.Resources>
+
+    <Grid Background="{StaticResource PawsBackgroundBrush}" Padding="32,28,32,0">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- ================= HEADER ================= -->
+        <Grid x:Name="HeaderPanel" Grid.Row="0" ColumnSpacing="16">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+
+            <StackPanel Grid.Column="0" Spacing="4">
+                <TextBlock Text="MANAGEMENT" Style="{StaticResource PawsOverline}"/>
+                <TextBlock Text="Branches" Style="{StaticResource PawsPageTitle}"/>
+                <TextBlock Text="Manage your shelter locations and see how much of your plan you are using."
+                           Style="{StaticResource PawsCaption}"/>
+            </StackPanel>
+
+            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+                <ProgressRing x:Name="Busy" IsActive="False" Width="24" Height="24"/>
+                <Button x:Name="RefreshButton" Style="{StaticResource PawsSecondaryButton}" Click="Refresh_Click">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <FontIcon Glyph="&#xE72C;" FontSize="14"/>
+                        <TextBlock Text="Refresh"/>
+                    </StackPanel>
+                </Button>
+                <Button x:Name="AddBranchButton" Style="{StaticResource PawsPrimaryButton}" Click="AddBranch_Click">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <FontIcon Glyph="&#xE710;" FontSize="14"/>
+                        <TextBlock Text="Add Branch"/>
+                    </StackPanel>
+                </Button>
+            </StackPanel>
+        </Grid>
+
+        <!-- ================= PLAN CARD ================= -->
+        <Border x:Name="PlanCard" Grid.Row="1" Style="{StaticResource PawsCard}" Margin="0,20,0,0">
+            <Grid ColumnSpacing="24">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+                <StackPanel Grid.Column="0" Spacing="6" VerticalAlignment="Center">
+                    <TextBlock Text="SUBSCRIPTION PLAN" Style="{StaticResource PawsOverline}"/>
+                    <Border x:Name="PlanBadge" Style="{StaticResource PawsBadgeBase}"
+                            Background="{StaticResource PawsHoverSurfaceBrush}"
+                            Padding="14,5" Visibility="Collapsed">
+                        <TextBlock x:Name="PlanBadgeText" Text=" "
+                                   FontSize="13" FontWeight="Bold"
+                                   Foreground="{StaticResource PawsTextSecondaryBrush}"/>
+                    </Border>
+                </StackPanel>
+
+                <StackPanel Grid.Column="1" Spacing="8" VerticalAlignment="Center">
+                    <TextBlock x:Name="PlanInfoText" Text="Loading plan info..."
+                               FontSize="14" FontWeight="SemiBold"
+                               Foreground="{StaticResource PawsTextPrimaryBrush}"/>
+                    <ProgressBar x:Name="PlanUsageBar" Height="8"
+                                 Minimum="0" Maximum="1" Value="0"
+                                 Visibility="Collapsed"/>
+
+                    <!-- Price, days remaining and Terms (shown once the plan has loaded) -->
+                    <Grid x:Name="PlanDetailsRow" Visibility="Collapsed" ColumnSpacing="12">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+
+                        <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+                            <TextBlock x:Name="PlanPriceText" Text=" "
+                                       FontSize="13" FontWeight="SemiBold"
+                                       Foreground="{StaticResource PawsTextPrimaryBrush}"/>
+                            <TextBlock x:Name="PlanRemainingText" Text=" "
+                                       Style="{StaticResource PawsCaption}"/>
+                            <TextBlock x:Name="PlanTermsStatusText" Text=" "
+                                       FontSize="12" FontWeight="SemiBold"
+                                       TextWrapping="Wrap"
+                                       Foreground="{StaticResource PawsTextSecondaryBrush}"/>
+                        </StackPanel>
+
+                        <Button Grid.Column="1" Content="View Terms"
+                                Style="{StaticResource PawsSecondaryButton}"
+                                MinHeight="32" Padding="12,4" FontSize="12"
+                                VerticalAlignment="Center"
+                                Click="ViewTerms_Click"/>
+                    </Grid>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- ================= MESSAGES ================= -->
+        <StackPanel Grid.Row="2" Spacing="8" Margin="0,16,0,0">
+            <InfoBar x:Name="ErrorBar" Severity="Error" IsOpen="False" IsClosable="True"/>
+            <InfoBar x:Name="SuccessBar" Severity="Success" IsOpen="False" IsClosable="True"/>
+        </StackPanel>
+
+        <!-- ================= EMPTY STATE + TABLE ================= -->
+        <ScrollViewer Grid.Row="3" VerticalScrollBarVisibility="Auto" Margin="0,8,0,0">
+            <StackPanel Spacing="16" Padding="0,8,0,32">
+
+                <StackPanel x:Name="EmptyState" Visibility="Collapsed"
+                            Spacing="10" HorizontalAlignment="Center" Margin="0,48,0,0">
+                    <StackPanel.Transitions>
+                        <TransitionCollection>
+                            <EntranceThemeTransition FromVerticalOffset="16"/>
+                        </TransitionCollection>
+                    </StackPanel.Transitions>
+                    <Image Source="ms-appx:///Assets/paws-icon.png" Width="72" Height="72" Opacity="0.35"/>
+                    <TextBlock Text="No branches yet" Style="{StaticResource PawsSectionTitle}" HorizontalAlignment="Center"/>
+                    <TextBlock Text="Use Add Branch to create your first location."
+                               Style="{StaticResource PawsCaption}" HorizontalAlignment="Center"/>
+                </StackPanel>
+
+                <Border x:Name="TableCard" Style="{StaticResource PawsCard}" Padding="0,0,0,8">
+                    <StackPanel>
+                        <StackPanel Padding="24,20,24,14" Spacing="2">
+                            <TextBlock Text="All Branches" Style="{StaticResource PawsSectionTitle}"/>
+                            <TextBlock x:Name="TotalText" Text=" " Style="{StaticResource PawsCaption}"/>
+                        </StackPanel>
+
+                        <ScrollViewer x:Name="TableScroll"
+                                      HorizontalScrollBarVisibility="Auto"
+                                      VerticalScrollBarVisibility="Disabled"
+                                      HorizontalScrollMode="Auto"
+                                      VerticalScrollMode="Disabled"
+                                      SizeChanged="TableScroll_SizeChanged">
+                            <Grid x:Name="TableGrid" MinWidth="860">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+
+                                <!-- Header row -->
+                                <Grid Grid.Row="0" Padding="24,10"
+                                      Background="{StaticResource PawsBackgroundBrush}"
+                                      BorderBrush="{StaticResource PawsBorderBrush}"
+                                      BorderThickness="0,1,0,1"
+                                      ColumnSpacing="12">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="2*"/>
+                                        <ColumnDefinition Width="110"/>
+                                        <ColumnDefinition Width="3*"/>
+                                        <ColumnDefinition Width="90"/>
+                                        <ColumnDefinition Width="220"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Grid.Column="0" Text="BRANCH" Style="{StaticResource PawsOverline}"/>
+                                    <TextBlock Grid.Column="1" Text="STATUS" Style="{StaticResource PawsOverline}"/>
+                                    <TextBlock Grid.Column="2" Text="ADDRESS" Style="{StaticResource PawsOverline}"/>
+                                    <TextBlock Grid.Column="3" Text="PETS" Style="{StaticResource PawsOverline}"/>
+                                    <TextBlock Grid.Column="4" Text="ACTION" Style="{StaticResource PawsOverline}" HorizontalAlignment="Right"/>
+                                </Grid>
+
+                                <!-- Data rows -->
+                                <Grid Grid.Row="1" x:Name="ListHost">
+                                    <Grid.OpacityTransition>
+                                        <ScalarTransition Duration="0:0:0.2"/>
+                                    </Grid.OpacityTransition>
+
+                                    <ItemsControl x:Name="BranchesList">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <Border Padding="24,14"
+                                                        Background="Transparent"
+                                                        BorderBrush="{StaticResource PawsBorderBrush}"
+                                                        BorderThickness="0,0,0,1"
+                                                        Loaded="Row_Loaded"
+                                                        PointerEntered="Row_PointerEntered"
+                                                        PointerExited="Row_PointerExited">
+                                                    <Border.BackgroundTransition>
+                                                        <BrushTransition Duration="0:0:0.12"/>
+                                                    </Border.BackgroundTransition>
+
+                                                    <Grid ColumnSpacing="12">
+                                                        <!-- These widths MUST match the header row above -->
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="2*"/>
+                                                            <ColumnDefinition Width="110"/>
+                                                            <ColumnDefinition Width="3*"/>
+                                                            <ColumnDefinition Width="90"/>
+                                                            <ColumnDefinition Width="220"/>
+                                                        </Grid.ColumnDefinitions>
+
+                                                        <!-- BRANCH -->
+                                                        <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="10"
+                                                                    VerticalAlignment="Center">
+                                                            <Border Width="32" Height="32" CornerRadius="16"
+                                                                    Background="{StaticResource PawsPrimarySoftBrush}">
+                                                                <FontIcon Glyph="&#xE707;" FontSize="14"
+                                                                          Foreground="{StaticResource PawsPrimaryBrush}"
+                                                                          HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                            </Border>
+                                                            <TextBlock Text="{Binding NameText}"
+                                                                       FontSize="14" FontWeight="SemiBold"
+                                                                       Foreground="{StaticResource PawsTextPrimaryBrush}"
+                                                                       VerticalAlignment="Center"
+                                                                       TextTrimming="CharacterEllipsis"/>
+                                                        </StackPanel>
+
+                                                        <!-- STATUS -->
+                                                        <Border Grid.Column="1"
+                                                                Style="{StaticResource PawsBadgeBase}"
+                                                                Background="{Binding StatusBadgeBackground}">
+                                                            <TextBlock Text="{Binding StatusLabel}"
+                                                                       Style="{StaticResource PawsBadgeTextBase}"
+                                                                       Foreground="{Binding StatusBadgeForeground}"/>
+                                                        </Border>
+
+                                                        <!-- ADDRESS -->
+                                                        <TextBlock Grid.Column="2" Text="{Binding AddressDisplay}"
+                                                                   FontSize="13"
+                                                                   Foreground="{StaticResource PawsTextSecondaryBrush}"
+                                                                   VerticalAlignment="Center"
+                                                                   TextWrapping="Wrap" MaxLines="2"
+                                                                   TextTrimming="CharacterEllipsis"/>
+
+                                                        <!-- PETS -->
+                                                        <TextBlock Grid.Column="3" Text="{Binding PetCountValue}"
+                                                                   FontSize="14" FontWeight="SemiBold"
+                                                                   Foreground="{StaticResource PawsTextPrimaryBrush}"
+                                                                   VerticalAlignment="Center"/>
+
+                                                        <!-- ACTIONS -->
+                                                        <StackPanel Grid.Column="4" Orientation="Horizontal" Spacing="6"
+                                                                    HorizontalAlignment="Right" VerticalAlignment="Center">
+                                                            <Button Content="Edit"
+                                                                    Style="{StaticResource PawsSecondaryButton}"
+                                                                    MinHeight="32" Padding="12,4" FontSize="12"
+                                                                    Click="EditBranch_Click" Tag="{Binding}"/>
+                                                            <Button Content="Deactivate"
+                                                                    Style="{StaticResource PawsGhostButton}"
+                                                                    Foreground="{StaticResource PawsErrorBrush}"
+                                                                    MinHeight="32" Padding="10,4" FontSize="12"
+                                                                    Click="DeactivateBranch_Click" Tag="{Binding}"
+                                                                    Visibility="{Binding DeactivateVisibility}"/>
+                                                            <Button Content="Activate"
+                                                                    Style="{StaticResource PawsGhostButton}"
+                                                                    Foreground="{StaticResource PawsSuccessBrush}"
+                                                                    MinHeight="32" Padding="10,4" FontSize="12"
+                                                                    Click="ActivateBranch_Click" Tag="{Binding}"
+                                                                    Visibility="{Binding ActivateVisibility}"/>
+                                                        </StackPanel>
+                                                    </Grid>
+                                                </Border>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </Grid>
+                            </Grid>
+                        </ScrollViewer>
+                    </StackPanel>
+                </Border>
+
+            </StackPanel>
+        </ScrollViewer>
+
+        <!-- =====================================================================
+             FORM POPUP: sits on top of the whole page. The overlay itself is
+             shown/hidden from code (WatchPanel). Only one panel shows at a time.
+             ===================================================================== -->
+        <Grid x:Name="FormOverlay"
+              Grid.RowSpan="4"
+              Margin="-32,-28,-32,0"
+              Background="#8C1F2A44"
+              Visibility="Collapsed">
+
+            <!-- Add / Edit branch -->
+            <Border x:Name="FormPanel" Visibility="Collapsed"
+                    Style="{StaticResource PawsCard}" Padding="24"
+                    MaxWidth="560" Margin="24,96,24,24"
+                    HorizontalAlignment="Stretch" VerticalAlignment="Center">
+                <StackPanel Spacing="12">
+                    <TextBlock x:Name="FormTitle" Text="Add Branch" Style="{StaticResource PawsSectionTitle}"/>
+                    <TextBox x:Name="BranchNameBox" Header="Branch Name"/>
+                    <TextBox x:Name="AddressBox" Header="Address (optional)" AcceptsReturn="True" Height="80"/>
+                    <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,4,0,0">
+                        <Button x:Name="SaveButton" Content="Save" Style="{StaticResource PawsPrimaryButton}" Click="Save_Click"/>
+                        <Button Content="Cancel" Style="{StaticResource PawsSecondaryButton}" Click="CancelForm_Click"/>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <!-- Plan terms and conditions (read-only) -->
+            <Border x:Name="TermsPanel" Visibility="Collapsed"
+                    Style="{StaticResource PawsCard}" Padding="24"
+                    MaxWidth="640" Margin="24,48,24,24"
+                    HorizontalAlignment="Stretch" VerticalAlignment="Center">
+                <StackPanel Spacing="12">
+                    <TextBlock x:Name="TermsTitle" Text="Terms and Conditions" Style="{StaticResource PawsSectionTitle}"/>
+                    <ScrollViewer MaxHeight="360" VerticalScrollBarVisibility="Auto">
+                        <TextBlock x:Name="TermsBody" TextWrapping="Wrap"
+                                   IsTextSelectionEnabled="True"
+                                   FontSize="14"
+                                   Foreground="{StaticResource PawsTextPrimaryBrush}"
+                                   Padding="0,0,12,0"/>
+                    </ScrollViewer>
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <Button x:Name="AgreeTermsButton" Content="I Agree"
+                                Style="{StaticResource PawsPrimaryButton}"
+                                Visibility="Collapsed" Click="AgreeTerms_Click"/>
+                        <Button Content="Close" Style="{StaticResource PawsSecondaryButton}"
+                                Click="CloseTerms_Click"/>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <!-- Error bar shown inside the popup -->
+            <InfoBar x:Name="PopupErrorBar"
+                     Severity="Error"
+                     IsOpen="False"
+                     IsClosable="True"
+                     VerticalAlignment="Top"
+                     HorizontalAlignment="Center"
+                     MaxWidth="560"
+                     Margin="24,24,24,0"/>
+        </Grid>
+    </Grid>
+</Page>

@@ -1,0 +1,260 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Page
+    x:Class="PAWS.winui.Views.ShellPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- Ctrl+K jumps to the search box from anywhere in the app -->
+    <Page.KeyboardAccelerators>
+        <KeyboardAccelerator Key="K" Modifiers="Control" Invoked="SearchAccelerator_Invoked"/>
+    </Page.KeyboardAccelerators>
+
+    <NavigationView
+        x:Name="NavView"
+        PaneDisplayMode="Left"
+        OpenPaneLength="260"
+        IsPaneToggleButtonVisible="False"
+        IsBackButtonVisible="Collapsed"
+        IsSettingsVisible="False"
+        SelectionChanged="NavView_SelectionChanged">
+
+        <!-- PAWS colors for the built-in navigation controls (local to this NavigationView only) -->
+        <NavigationView.Resources>
+            <!-- Pane and content backgrounds -->
+            <SolidColorBrush x:Key="NavigationViewExpandedPaneBackground" Color="{StaticResource PawsSurfaceColor}"/>
+            <SolidColorBrush x:Key="NavigationViewDefaultPaneBackground" Color="{StaticResource PawsSurfaceColor}"/>
+            <SolidColorBrush x:Key="NavigationViewContentBackground" Color="{StaticResource PawsBackgroundColor}"/>
+            <SolidColorBrush x:Key="NavigationViewContentGridBorderBrush" Color="{StaticResource PawsBorderColor}"/>
+            <Thickness x:Key="NavigationViewContentGridBorderThickness">1,0,0,0</Thickness>
+            <CornerRadius x:Key="NavigationViewContentGridCornerRadius">0</CornerRadius>
+            <Thickness x:Key="NavigationViewContentMargin">0</Thickness>
+
+            <!-- Item states -->
+            <SolidColorBrush x:Key="NavigationViewItemBackgroundPointerOver" Color="{StaticResource PawsHoverSurfaceColor}"/>
+            <SolidColorBrush x:Key="NavigationViewItemBackgroundPressed" Color="{StaticResource PawsHoverSurfaceColor}"/>
+            <SolidColorBrush x:Key="NavigationViewItemBackgroundSelected" Color="{StaticResource PawsPrimarySoftColor}"/>
+            <SolidColorBrush x:Key="NavigationViewItemBackgroundSelectedPointerOver" Color="{StaticResource PawsPrimarySoftColor}"/>
+            <SolidColorBrush x:Key="NavigationViewItemBackgroundSelectedPressed" Color="{StaticResource PawsPrimarySoftColor}"/>
+
+            <SolidColorBrush x:Key="NavigationViewItemForeground" Color="{StaticResource PawsNavyColor}"/>
+            <SolidColorBrush x:Key="NavigationViewItemForegroundPointerOver" Color="{StaticResource PawsNavyColor}"/>
+            <SolidColorBrush x:Key="NavigationViewItemForegroundPressed" Color="{StaticResource PawsNavyColor}"/>
+            <SolidColorBrush x:Key="NavigationViewItemForegroundSelected" Color="{StaticResource PawsPrimaryColor}"/>
+            <SolidColorBrush x:Key="NavigationViewItemForegroundSelectedPointerOver" Color="{StaticResource PawsPrimaryColor}"/>
+            <SolidColorBrush x:Key="NavigationViewItemForegroundSelectedPressed" Color="{StaticResource PawsPrimaryColor}"/>
+
+            <!-- The little bar on the left of the selected item -->
+            <SolidColorBrush x:Key="NavigationViewSelectionIndicatorForeground" Color="{StaticResource PawsPrimaryColor}"/>
+        </NavigationView.Resources>
+
+        <!-- ===== BRAND HEADER ===== -->
+        <NavigationView.PaneHeader>
+            <StackPanel
+                Orientation="Horizontal"
+                Spacing="12"
+                Padding="20,18,16,14">
+                <Image
+                    Source="ms-appx:///Assets/paws-icon.png"
+                    Width="38"
+                    Height="38"/>
+                <StackPanel VerticalAlignment="Center">
+                    <TextBlock
+                        Text="PAWS"
+                        FontSize="20"
+                        FontWeight="Bold"
+                        CharacterSpacing="60"
+                        Foreground="{StaticResource PawsPrimaryBrush}"/>
+                    <TextBlock
+                        Text="Pet Adoption System"
+                        Style="{StaticResource PawsCaption}"/>
+                </StackPanel>
+            </StackPanel>
+        </NavigationView.PaneHeader>
+
+        <!-- ===== USER CARD + SIGN OUT ===== -->
+        <NavigationView.PaneFooter>
+            <Border
+                Margin="12"
+                Padding="12"
+                Background="{StaticResource PawsBackgroundBrush}"
+                BorderBrush="{StaticResource PawsBorderBrush}"
+                BorderThickness="1"
+                CornerRadius="{StaticResource PawsCardRadius}">
+                <StackPanel Spacing="12">
+                    <Grid ColumnSpacing="12">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+
+                        <!-- Avatar circle with initials -->
+                        <Border
+                            Grid.Column="0"
+                            Width="40"
+                            Height="40"
+                            CornerRadius="20"
+                            Background="{StaticResource PawsPrimaryBrush}"
+                            VerticalAlignment="Center">
+                            <TextBlock
+                                x:Name="AvatarInitialsText"
+                                HorizontalAlignment="Center"
+                                VerticalAlignment="Center"
+                                FontSize="14"
+                                FontWeight="SemiBold"
+                                Foreground="White"/>
+                        </Border>
+
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="1">
+                            <TextBlock
+                                x:Name="UserNameText"
+                                FontSize="14"
+                                FontWeight="SemiBold"
+                                TextTrimming="CharacterEllipsis"
+                                Foreground="{StaticResource PawsTextPrimaryBrush}"/>
+                            <TextBlock
+                                x:Name="UserRoleText"
+                                Style="{StaticResource PawsCaption}"
+                                TextTrimming="CharacterEllipsis"/>
+                            <TextBlock
+                                x:Name="UserCompanyText"
+                                Style="{StaticResource PawsCaption}"
+                                TextTrimming="CharacterEllipsis"/>
+                        </StackPanel>
+                    </Grid>
+
+                    <Button
+                        Style="{StaticResource PawsSecondaryButton}"
+                        HorizontalAlignment="Stretch"
+                        MinHeight="36"
+                        Padding="12,6"
+                        Click="SignOut_Click">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <FontIcon Glyph="&#xE7E8;" FontSize="14"/>
+                            <TextBlock Text="Sign out" FontSize="13"/>
+                        </StackPanel>
+                    </Button>
+                </StackPanel>
+            </Border>
+        </NavigationView.PaneFooter>
+
+        <!-- ===== PAGE CONTENT: top bar above the page ===== -->
+        <Grid Background="{StaticResource PawsBackgroundBrush}">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+
+            <!-- ===== TOP BAR ===== -->
+            <Border x:Name="TopBar"
+                    Grid.Row="0"
+                    Background="{StaticResource PawsSurfaceBrush}"
+                    BorderBrush="{StaticResource PawsBorderBrush}"
+                    BorderThickness="0,0,0,1"
+                    Padding="24,10">
+                <Grid ColumnSpacing="16">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <!-- Breadcrumb: PAWS > current page -->
+                    <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                        <HyperlinkButton Padding="6,2" MinHeight="0" MinWidth="0"
+                                         VerticalAlignment="Center"
+                                         Click="Home_Click"
+                                         ToolTipService.ToolTip="Go to home">
+                            <TextBlock Text="PAWS" Style="{StaticResource PawsCaption}"/>
+                        </HyperlinkButton>
+                        <FontIcon Glyph="&#xE76C;" FontSize="10"
+                                  Foreground="{StaticResource PawsTextSecondaryBrush}"
+                                  VerticalAlignment="Center"/>
+                        <TextBlock x:Name="CurrentPageText" Text=" "
+                                   FontSize="14" FontWeight="SemiBold"
+                                   Foreground="{StaticResource PawsTextPrimaryBrush}"
+                                   VerticalAlignment="Center"/>
+                    </StackPanel>
+
+                    <!-- Page search (Ctrl+K) -->
+                    <AutoSuggestBox x:Name="PageSearchBox"
+                                    Grid.Column="1"
+                                    MaxWidth="460"
+                                    HorizontalAlignment="Stretch"
+                                    VerticalAlignment="Center"
+                                    PlaceholderText="Search pages...  (Ctrl+K)"
+                                    QueryIcon="Find"
+                                    TextMemberPath="Title"
+                                    GotFocus="PageSearch_GotFocus"
+                                    TextChanged="PageSearch_TextChanged"
+                                    QuerySubmitted="PageSearch_QuerySubmitted"/>
+
+                    <!-- Status pills + bell -->
+                    <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+
+                        <!-- API status (real check, every 30 seconds) -->
+                        <Border x:Name="ApiPill"
+                                Style="{StaticResource PawsBadgeBase}"
+                                Background="{StaticResource PawsHoverSurfaceBrush}"
+                                Padding="10,4">
+                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                <Ellipse x:Name="ApiDot" Width="8" Height="8"
+                                         Fill="{StaticResource PawsTextSecondaryBrush}"
+                                         VerticalAlignment="Center"/>
+                                <TextBlock x:Name="ApiPillText" Text="Checking..."
+                                           Style="{StaticResource PawsBadgeTextBase}"
+                                           Foreground="{StaticResource PawsTextSecondaryBrush}"/>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Company code -->
+                        <Border x:Name="CompanyPill"
+                                Style="{StaticResource PawsBadgeBase}"
+                                Background="{StaticResource PawsPrimarySoftBrush}"
+                                Padding="10,4">
+                            <TextBlock x:Name="CompanyPillText" Text=" "
+                                       Style="{StaticResource PawsBadgeTextBase}"
+                                       Foreground="{StaticResource PawsPrimaryBrush}"/>
+                        </Border>
+
+                        <!-- Notifications bell with the unread count -->
+                        <Button x:Name="BellButton"
+                                Style="{StaticResource PawsIconButton}"
+                                Width="40" Height="40" Padding="0"
+                                Click="Bell_Click">
+                            <Grid>
+                                <FontIcon Glyph="&#xE7ED;" FontSize="16"
+                                          HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                <Border x:Name="BellCountBadge"
+                                        Visibility="Collapsed"
+                                        Background="{StaticResource PawsErrorBrush}"
+                                        CornerRadius="8"
+                                        MinWidth="16" Height="16" Padding="4,0"
+                                        HorizontalAlignment="Right" VerticalAlignment="Top"
+                                        Margin="0,-6,-8,0">
+                                    <TextBlock x:Name="BellCountText"
+                                               FontSize="10" FontWeight="SemiBold"
+                                               Foreground="White"
+                                               HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                </Border>
+                            </Grid>
+                        </Button>
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <!-- ===== THE CURRENT PAGE ===== -->
+            <Frame x:Name="ContentFrame" Grid.Row="1">
+                <Frame.ContentTransitions>
+                    <TransitionCollection>
+                        <NavigationThemeTransition>
+                            <NavigationThemeTransition.DefaultNavigationTransitionInfo>
+                                <EntranceNavigationTransitionInfo/>
+                            </NavigationThemeTransition.DefaultNavigationTransitionInfo>
+                        </NavigationThemeTransition>
+                    </TransitionCollection>
+                </Frame.ContentTransitions>
+            </Frame>
+        </Grid>
+
+    </NavigationView>
+</Page>

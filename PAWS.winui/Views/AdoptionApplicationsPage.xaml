@@ -1,0 +1,379 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Page
+    x:Class="PAWS.winui.Views.AdoptionApplicationsPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    Loaded="Page_Loaded"
+    Unloaded="Page_Unloaded">
+
+    <Page.Resources>
+        <Style TargetType="TextBox" BasedOn="{StaticResource PawsTextBox}"/>
+        <Style TargetType="ComboBox" BasedOn="{StaticResource PawsComboBox}"/>
+    </Page.Resources>
+
+    <Grid Background="{StaticResource PawsBackgroundBrush}" Padding="32,28,32,0">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- ================= HEADER ================= -->
+        <Grid x:Name="HeaderPanel" Grid.Row="0" ColumnSpacing="16">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+
+            <StackPanel Grid.Column="0" Spacing="4">
+                <TextBlock Text="APPLICATIONS" Style="{StaticResource PawsOverline}"/>
+                <TextBlock x:Name="PageTitle" Text="Adoption Applications" Style="{StaticResource PawsPageTitle}"/>
+            </StackPanel>
+
+            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+                <ProgressRing x:Name="Busy" IsActive="False" Width="24" Height="24"/>
+                <Button Style="{StaticResource PawsSecondaryButton}" Click="Refresh_Click">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <FontIcon Glyph="&#xE72C;" FontSize="14"/>
+                        <TextBlock Text="Refresh"/>
+                    </StackPanel>
+                </Button>
+            </StackPanel>
+        </Grid>
+
+        <!-- ================= TOOLBAR ================= -->
+        <Border x:Name="ToolbarCard" Grid.Row="1" Style="{StaticResource PawsCard}" Padding="16" Margin="0,20,0,0">
+            <Grid ColumnSpacing="12">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <Grid Grid.Column="0" MinWidth="200">
+                    <TextBox x:Name="SearchBox"
+                             PlaceholderText="Search by application number, pet or applicant..."
+                             Padding="38,9,12,9"
+                             TextChanged="Search_TextChanged"/>
+                    <FontIcon Glyph="&#xE721;" FontSize="14"
+                              Foreground="{StaticResource PawsTextSecondaryBrush}"
+                              HorizontalAlignment="Left" VerticalAlignment="Center"
+                              Margin="14,0,0,0" IsHitTestVisible="False"/>
+                </Grid>
+
+                <ComboBox x:Name="StatusFilterBox" Grid.Column="1" Width="200"
+                          SelectionChanged="Filter_Changed"/>
+
+                <Button Grid.Column="2" Style="{StaticResource PawsGhostButton}"
+                        Content="Reset" Click="ResetFilters_Click"/>
+            </Grid>
+        </Border>
+
+        <!-- ================= MESSAGES ================= -->
+        <StackPanel Grid.Row="2" Spacing="8" Margin="0,16,0,0">
+            <InfoBar x:Name="ErrorBar" Severity="Error" IsOpen="False" IsClosable="True"/>
+            <InfoBar x:Name="SuccessBar" Severity="Success" IsOpen="False" IsClosable="True"/>
+        </StackPanel>
+
+        <!-- ================= EMPTY STATE + TABLE (scroll together) ================= -->
+        <ScrollViewer Grid.Row="3" VerticalScrollBarVisibility="Auto" Margin="0,8,0,0">
+            <StackPanel Spacing="16" Padding="0,8,0,32">
+
+                <!-- ================= EMPTY STATE ================= -->
+                <StackPanel x:Name="EmptyState" Visibility="Collapsed"
+                            Spacing="10" HorizontalAlignment="Center" Margin="0,48,0,0">
+                    <StackPanel.Transitions>
+                        <TransitionCollection>
+                            <EntranceThemeTransition FromVerticalOffset="16"/>
+                        </TransitionCollection>
+                    </StackPanel.Transitions>
+                    <Image Source="ms-appx:///Assets/paws-icon.png" Width="72" Height="72" Opacity="0.35"/>
+                    <TextBlock Text="No applications found" Style="{StaticResource PawsSectionTitle}" HorizontalAlignment="Center"/>
+                    <TextBlock Text="Try a different search or change the status filter."
+                               Style="{StaticResource PawsCaption}" HorizontalAlignment="Center"/>
+                </StackPanel>
+
+                <!-- ================= TABLE CARD ================= -->
+                <Border x:Name="TableCard" Style="{StaticResource PawsCard}" Padding="0,0,0,8">
+                    <StackPanel>
+
+                        <!-- Card title -->
+                        <StackPanel Padding="24,20,24,14" Spacing="2">
+                            <TextBlock x:Name="TableTitle" Text="All Applications" Style="{StaticResource PawsSectionTitle}"/>
+                            <TextBlock x:Name="TotalText" Text=" " Style="{StaticResource PawsCaption}"/>
+                        </StackPanel>
+
+                        <!-- Sideways scroll if the window is narrow -->
+                        <ScrollViewer x:Name="TableScroll"
+                                      HorizontalScrollBarVisibility="Auto"
+                                      VerticalScrollBarVisibility="Disabled"
+                                      HorizontalScrollMode="Auto"
+                                      VerticalScrollMode="Disabled"
+                                      SizeChanged="TableScroll_SizeChanged">
+                            <Grid x:Name="TableGrid" MinWidth="1040">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+
+                                <!-- Header row -->
+                                <Grid Grid.Row="0" Padding="24,10"
+                                      Background="{StaticResource PawsBackgroundBrush}"
+                                      BorderBrush="{StaticResource PawsBorderBrush}"
+                                      BorderThickness="0,1,0,1"
+                                      ColumnSpacing="12">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="150"/>
+                                        <ColumnDefinition Width="2*"/>
+                                        <ColumnDefinition Width="2*"/>
+                                        <ColumnDefinition Width="130"/>
+                                        <ColumnDefinition Width="120"/>
+                                        <ColumnDefinition Width="330"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Grid.Column="0" Text="APP #" Style="{StaticResource PawsOverline}"/>
+                                    <TextBlock Grid.Column="1" Text="PET" Style="{StaticResource PawsOverline}"/>
+                                    <TextBlock Grid.Column="2" x:Name="ThirdColumnHeader" Text="APPLICANT" Style="{StaticResource PawsOverline}"/>
+                                    <TextBlock Grid.Column="3" Text="STATUS" Style="{StaticResource PawsOverline}"/>
+                                    <TextBlock Grid.Column="4" Text="SUBMITTED" Style="{StaticResource PawsOverline}"/>
+                                    <TextBlock Grid.Column="5" Text="ACTION" Style="{StaticResource PawsOverline}" HorizontalAlignment="Right"/>
+                                </Grid>
+
+                                <!-- Data rows -->
+                                <Grid Grid.Row="1" x:Name="ListHost">
+                                    <Grid.OpacityTransition>
+                                        <ScalarTransition Duration="0:0:0.2"/>
+                                    </Grid.OpacityTransition>
+
+                                    <ItemsControl x:Name="ApplicationsList">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <Border Padding="24,12"
+                                                        Background="Transparent"
+                                                        BorderBrush="{StaticResource PawsBorderBrush}"
+                                                        BorderThickness="0,0,0,1"
+                                                        Loaded="Row_Loaded"
+                                                        PointerEntered="Row_PointerEntered"
+                                                        PointerExited="Row_PointerExited">
+                                                    <Border.BackgroundTransition>
+                                                        <BrushTransition Duration="0:0:0.12"/>
+                                                    </Border.BackgroundTransition>
+
+                                                    <Grid ColumnSpacing="12" RowSpacing="6">
+                                                        <!-- These widths MUST match the header row above -->
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="150"/>
+                                                            <ColumnDefinition Width="2*"/>
+                                                            <ColumnDefinition Width="2*"/>
+                                                            <ColumnDefinition Width="130"/>
+                                                            <ColumnDefinition Width="120"/>
+                                                            <ColumnDefinition Width="330"/>
+                                                        </Grid.ColumnDefinitions>
+                                                        <Grid.RowDefinitions>
+                                                            <RowDefinition Height="Auto"/>
+                                                            <RowDefinition Height="Auto"/>
+                                                        </Grid.RowDefinitions>
+
+                                                        <!-- APP # -->
+                                                        <TextBlock Grid.Row="0" Grid.Column="0"
+                                                                   Text="{Binding AppNumberText}"
+                                                                   FontSize="13" FontWeight="SemiBold"
+                                                                   Foreground="{StaticResource PawsPrimaryBrush}"
+                                                                   VerticalAlignment="Center"
+                                                                   TextTrimming="CharacterEllipsis"/>
+
+                                                        <!-- PET -->
+                                                        <StackPanel Grid.Row="0" Grid.Column="1"
+                                                                    Orientation="Horizontal" Spacing="10"
+                                                                    VerticalAlignment="Center">
+                                                            <Border Width="32" Height="32" CornerRadius="16"
+                                                                    Background="{StaticResource PawsPrimarySoftBrush}">
+                                                                <Image Source="ms-appx:///Assets/paws-icon.png"
+                                                                       Width="18" Height="18"
+                                                                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                            </Border>
+                                                            <TextBlock Text="{Binding PetNameText}"
+                                                                       FontSize="14" FontWeight="SemiBold"
+                                                                       Foreground="{StaticResource PawsTextPrimaryBrush}"
+                                                                       VerticalAlignment="Center"
+                                                                       TextTrimming="CharacterEllipsis"/>
+                                                        </StackPanel>
+
+                                                        <!-- APPLICANT (Admin/Staff) or REVIEWED BY (Adopter) -->
+                                                        <TextBlock Grid.Row="0" Grid.Column="2"
+                                                                   Text="{Binding ThirdColumnText}"
+                                                                   FontSize="14"
+                                                                   Foreground="{StaticResource PawsTextPrimaryBrush}"
+                                                                   VerticalAlignment="Center"
+                                                                   TextTrimming="CharacterEllipsis"/>
+
+                                                        <!-- STATUS -->
+                                                        <Border Grid.Row="0" Grid.Column="3"
+                                                                Style="{StaticResource PawsBadgeBase}"
+                                                                Background="{Binding StatusBadgeBackground}">
+                                                            <TextBlock Text="{Binding StatusLabel}"
+                                                                       Style="{StaticResource PawsBadgeTextBase}"
+                                                                       Foreground="{Binding StatusBadgeForeground}"/>
+                                                        </Border>
+
+                                                        <!-- SUBMITTED -->
+                                                        <TextBlock Grid.Row="0" Grid.Column="4"
+                                                                   Text="{Binding SubmittedText}"
+                                                                   Style="{StaticResource PawsCaption}"
+                                                                   FontSize="13"
+                                                                   VerticalAlignment="Center"/>
+
+                                                        <!-- ACTIONS -->
+                                                        <StackPanel Grid.Row="0" Grid.Column="5"
+                                                                    Orientation="Horizontal" Spacing="6"
+                                                                    HorizontalAlignment="Right" VerticalAlignment="Center">
+                                                            <Button Content="Withdraw"
+                                                                    Style="{StaticResource PawsSecondaryButton}"
+                                                                    MinHeight="32" Padding="12,4" FontSize="12"
+                                                                    Click="Withdraw_Click" Tag="{Binding}"
+                                                                    Visibility="{Binding WithdrawVisibility}"/>
+                                                            <Button Content="Under Review"
+                                                                    Style="{StaticResource PawsSecondaryButton}"
+                                                                    MinHeight="32" Padding="12,4" FontSize="12"
+                                                                    Click="UnderReview_Click" Tag="{Binding}"
+                                                                    Visibility="{Binding UnderReviewVisibility}"/>
+                                                            <Button Content="Schedule Interview"
+                                                                    Style="{StaticResource PawsSecondaryButton}"
+                                                                    MinHeight="32" Padding="12,4" FontSize="12"
+                                                                    Click="ScheduleInterview_Click" Tag="{Binding}"
+                                                                    Visibility="{Binding InterviewButtonVisibility}"/>
+                                                            <Button Content="Approve"
+                                                                    Style="{StaticResource PawsPrimaryButton}"
+                                                                    MinHeight="32" Padding="12,4" FontSize="12"
+                                                                    Click="Approve_Click" Tag="{Binding}"
+                                                                    Visibility="{Binding ApproveVisibility}"/>
+                                                            <Button Content="Reject"
+                                                                    Style="{StaticResource PawsGhostButton}"
+                                                                    Foreground="{StaticResource PawsErrorBrush}"
+                                                                    MinHeight="32" Padding="10,4" FontSize="12"
+                                                                    Click="Reject_Click" Tag="{Binding}"
+                                                                    Visibility="{Binding RejectVisibility}"/>
+                                                            <Button Content="Complete"
+                                                                    Style="{StaticResource PawsPrimaryButton}"
+                                                                    MinHeight="32" Padding="12,4" FontSize="12"
+                                                                    Click="Complete_Click" Tag="{Binding}"
+                                                                    Visibility="{Binding CompleteVisibility}"/>
+                                                        </StackPanel>
+
+                                                        <!-- Interview + rejection details (only when present) -->
+                                                        <StackPanel Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="5" Spacing="2">
+                                                            <TextBlock Text="{Binding InterviewText}"
+                                                                       FontSize="12"
+                                                                       Foreground="{StaticResource PawsInfoBrush}"
+                                                                       Visibility="{Binding InterviewVisibility}"
+                                                                       TextWrapping="Wrap"/>
+                                                            <TextBlock Text="{Binding RejectionText}"
+                                                                       FontSize="12"
+                                                                       Foreground="{StaticResource PawsErrorBrush}"
+                                                                       Visibility="{Binding RejectionVisibility}"
+                                                                       TextWrapping="Wrap"/>
+                                                        </StackPanel>
+                                                    </Grid>
+                                                </Border>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </Grid>
+                            </Grid>
+                        </ScrollViewer>
+                    </StackPanel>
+                </Border>
+
+            </StackPanel>
+        </ScrollViewer>
+
+        <!-- =====================================================================
+             FORM POPUP: sits on top of the whole page, so it is always visible
+             no matter how far the table is scrolled. Only one panel shows at a
+             time. The overlay itself is shown/hidden from code (WatchPanel).
+             ===================================================================== -->
+        <Grid x:Name="FormOverlay"
+              Grid.RowSpan="4"
+              Margin="-32,-28,-32,0"
+              Background="#8C1F2A44"
+              Visibility="Collapsed">
+
+            <!-- Under Review form -->
+            <Border x:Name="UnderReviewFormPanel" Visibility="Collapsed"
+                    Style="{StaticResource PawsCard}" Padding="24"
+                    MaxWidth="560" Margin="24,96,24,24"
+                    HorizontalAlignment="Stretch" VerticalAlignment="Center">
+                <StackPanel Spacing="12">
+                    <TextBlock Text="Move to Under Review" Style="{StaticResource PawsSectionTitle}"/>
+                    <TextBox x:Name="UnderReviewRemarksBox" Header="Remarks (optional)" AcceptsReturn="True" Height="80"/>
+                    <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,4,0,0">
+                        <Button Content="Confirm" Style="{StaticResource PawsPrimaryButton}" Click="ConfirmUnderReview_Click"/>
+                        <Button Content="Cancel" Style="{StaticResource PawsSecondaryButton}" Click="CancelUnderReviewForm_Click"/>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <!-- Schedule Interview form -->
+            <Border x:Name="InterviewFormPanel" Visibility="Collapsed"
+                    Style="{StaticResource PawsCard}" Padding="24"
+                    MaxWidth="560" Margin="24,96,24,24"
+                    HorizontalAlignment="Stretch" VerticalAlignment="Center">
+                <StackPanel Spacing="12">
+                    <TextBlock Text="Schedule Interview" Style="{StaticResource PawsSectionTitle}"/>
+                    <DatePicker x:Name="InterviewDatePicker" Header="Interview Date"/>
+                    <TextBox x:Name="InterviewNotesBox" Header="Notes (optional)" AcceptsReturn="True" Height="80"/>
+                    <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,4,0,0">
+                        <Button Content="Confirm" Style="{StaticResource PawsPrimaryButton}" Click="ConfirmInterview_Click"/>
+                        <Button Content="Cancel" Style="{StaticResource PawsSecondaryButton}" Click="CancelInterviewForm_Click"/>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <!-- Approve form -->
+            <Border x:Name="ApproveFormPanel" Visibility="Collapsed"
+                    Style="{StaticResource PawsCard}" Padding="24"
+                    MaxWidth="560" Margin="24,96,24,24"
+                    HorizontalAlignment="Stretch" VerticalAlignment="Center">
+                <StackPanel Spacing="12">
+                    <TextBlock Text="Approve Application" Style="{StaticResource PawsSectionTitle}"/>
+                    <Border Background="{StaticResource PawsWarningSoftBrush}"
+                            CornerRadius="8" Padding="12,8">
+                        <TextBlock Text="This will mark the pet as Adopted and automatically reject any other open applications for the same pet."
+                                   TextWrapping="Wrap" FontSize="12"
+                                   Foreground="{StaticResource PawsWarningBrush}"/>
+                    </Border>
+                    <TextBox x:Name="ApproveRemarksBox" Header="Remarks (optional)" AcceptsReturn="True" Height="80"/>
+                    <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,4,0,0">
+                        <Button Content="Confirm Approval" Style="{StaticResource PawsPrimaryButton}" Click="ConfirmApprove_Click"/>
+                        <Button Content="Cancel" Style="{StaticResource PawsSecondaryButton}" Click="CancelApproveForm_Click"/>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <!-- Reject form -->
+            <Border x:Name="RejectFormPanel" Visibility="Collapsed"
+                    Style="{StaticResource PawsCard}" Padding="24"
+                    MaxWidth="560" Margin="24,96,24,24"
+                    HorizontalAlignment="Stretch" VerticalAlignment="Center">
+                <StackPanel Spacing="12">
+                    <TextBlock Text="Reject Application" Style="{StaticResource PawsSectionTitle}"/>
+                    <TextBox x:Name="RejectReasonBox" Header="Rejection Reason" AcceptsReturn="True" Height="80"/>
+                    <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,4,0,0">
+                        <Button Content="Confirm Rejection" Style="{StaticResource PawsPrimaryButton}" Click="ConfirmReject_Click"/>
+                        <Button Content="Cancel" Style="{StaticResource PawsSecondaryButton}" Click="CancelRejectForm_Click"/>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <!-- Error bar shown inside the popup -->
+            <InfoBar x:Name="PopupErrorBar"
+                     Severity="Error"
+                     IsOpen="False"
+                     IsClosable="True"
+                     VerticalAlignment="Top"
+                     HorizontalAlignment="Center"
+                     MaxWidth="560"
+                     Margin="24,24,24,0"/>
+        </Grid>
+    </Grid>
+</Page>

@@ -1,0 +1,324 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Page
+    x:Class="PAWS.winui.Views.UsersPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    Loaded="Page_Loaded"
+    Unloaded="Page_Unloaded">
+
+    <Page.Resources>
+        <Style TargetType="TextBox" BasedOn="{StaticResource PawsTextBox}"/>
+        <Style TargetType="PasswordBox" BasedOn="{StaticResource PawsPasswordBox}"/>
+        <Style TargetType="ComboBox" BasedOn="{StaticResource PawsComboBox}"/>
+    </Page.Resources>
+
+    <Grid Background="{StaticResource PawsBackgroundBrush}" Padding="32,28,32,0">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- ================= HEADER ================= -->
+        <Grid x:Name="HeaderPanel" Grid.Row="0" ColumnSpacing="16">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+
+            <StackPanel Grid.Column="0" Spacing="4">
+                <TextBlock Text="MANAGEMENT" Style="{StaticResource PawsOverline}"/>
+                <TextBlock Text="Manage Users" Style="{StaticResource PawsPageTitle}"/>
+                <TextBlock x:Name="CountText" Text=" " Style="{StaticResource PawsCaption}"/>
+            </StackPanel>
+
+            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+                <ProgressRing x:Name="Busy" IsActive="False" Width="24" Height="24"/>
+                <Button x:Name="RefreshButton" Style="{StaticResource PawsSecondaryButton}" Click="Refresh_Click">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <FontIcon Glyph="&#xE72C;" FontSize="14"/>
+                        <TextBlock Text="Refresh"/>
+                    </StackPanel>
+                </Button>
+                <Button x:Name="AddUserButton" Style="{StaticResource PawsPrimaryButton}" Click="AddUser_Click">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <FontIcon Glyph="&#xE710;" FontSize="14"/>
+                        <TextBlock Text="Add User"/>
+                    </StackPanel>
+                </Button>
+            </StackPanel>
+        </Grid>
+
+        <!-- ================= TOOLBAR ================= -->
+        <Border x:Name="ToolbarCard" Grid.Row="1" Style="{StaticResource PawsCard}" Padding="16" Margin="0,20,0,0">
+            <Grid ColumnSpacing="12">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <Grid Grid.Column="0" MinWidth="200">
+                    <TextBox x:Name="SearchBox"
+                             PlaceholderText="Search by name or email..."
+                             Padding="38,9,12,9"
+                             TextChanged="Search_TextChanged"/>
+                    <FontIcon Glyph="&#xE721;" FontSize="14"
+                              Foreground="{StaticResource PawsTextSecondaryBrush}"
+                              HorizontalAlignment="Left" VerticalAlignment="Center"
+                              Margin="14,0,0,0" IsHitTestVisible="False"/>
+                </Grid>
+
+                <ComboBox x:Name="RoleFilterBox" Grid.Column="1" Width="190"
+                          SelectionChanged="RoleFilter_Changed"/>
+
+                <Button Grid.Column="2" Style="{StaticResource PawsGhostButton}"
+                        Content="Reset" Click="ResetFilters_Click"/>
+            </Grid>
+        </Border>
+
+        <!-- ================= MESSAGES ================= -->
+        <StackPanel Grid.Row="2" Spacing="8" Margin="0,16,0,0">
+            <InfoBar x:Name="ErrorBar" Severity="Error" IsOpen="False" IsClosable="True"/>
+            <InfoBar x:Name="SuccessBar" Severity="Success" IsOpen="False" IsClosable="True"/>
+        </StackPanel>
+
+        <!-- ================= EMPTY STATE + TABLE ================= -->
+        <ScrollViewer Grid.Row="3" VerticalScrollBarVisibility="Auto" Margin="0,8,0,0">
+            <StackPanel Spacing="16" Padding="0,8,0,32">
+
+                <StackPanel x:Name="EmptyState" Visibility="Collapsed"
+                            Spacing="10" HorizontalAlignment="Center" Margin="0,48,0,0">
+                    <StackPanel.Transitions>
+                        <TransitionCollection>
+                            <EntranceThemeTransition FromVerticalOffset="16"/>
+                        </TransitionCollection>
+                    </StackPanel.Transitions>
+                    <Image Source="ms-appx:///Assets/paws-icon.png" Width="72" Height="72" Opacity="0.35"/>
+                    <TextBlock x:Name="EmptyTitleText" Text="No users found"
+                               Style="{StaticResource PawsSectionTitle}" HorizontalAlignment="Center"/>
+                    <TextBlock x:Name="EmptyHintText" Text=" "
+                               Style="{StaticResource PawsCaption}" HorizontalAlignment="Center"/>
+                </StackPanel>
+
+                <Border x:Name="TableCard" Style="{StaticResource PawsCard}" Padding="0,0,0,8">
+                    <StackPanel>
+                        <StackPanel Padding="24,20,24,14" Spacing="2">
+                            <TextBlock Text="All Users" Style="{StaticResource PawsSectionTitle}"/>
+                            <TextBlock x:Name="TotalText" Text=" " Style="{StaticResource PawsCaption}"/>
+                        </StackPanel>
+
+                        <ScrollViewer x:Name="TableScroll"
+                                      HorizontalScrollBarVisibility="Auto"
+                                      VerticalScrollBarVisibility="Disabled"
+                                      HorizontalScrollMode="Auto"
+                                      VerticalScrollMode="Disabled"
+                                      SizeChanged="TableScroll_SizeChanged">
+                            <Grid x:Name="TableGrid" MinWidth="960">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+
+                                <!-- Header row -->
+                                <Grid Grid.Row="0" Padding="24,10"
+                                      Background="{StaticResource PawsBackgroundBrush}"
+                                      BorderBrush="{StaticResource PawsBorderBrush}"
+                                      BorderThickness="0,1,0,1"
+                                      ColumnSpacing="12">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="140"/>
+                                        <ColumnDefinition Width="110"/>
+                                        <ColumnDefinition Width="160"/>
+                                        <ColumnDefinition Width="230"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Grid.Column="0" Text="USER" Style="{StaticResource PawsOverline}"/>
+                                    <TextBlock Grid.Column="1" Text="ROLE" Style="{StaticResource PawsOverline}"/>
+                                    <TextBlock Grid.Column="2" Text="STATUS" Style="{StaticResource PawsOverline}"/>
+                                    <TextBlock Grid.Column="3" Text="PHONE" Style="{StaticResource PawsOverline}"/>
+                                    <TextBlock Grid.Column="4" Text="ACTION" Style="{StaticResource PawsOverline}" HorizontalAlignment="Right"/>
+                                </Grid>
+
+                                <!-- Data rows -->
+                                <Grid Grid.Row="1" x:Name="ListHost">
+                                    <Grid.OpacityTransition>
+                                        <ScalarTransition Duration="0:0:0.2"/>
+                                    </Grid.OpacityTransition>
+
+                                    <ItemsControl x:Name="UsersList">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <Border Padding="24,12"
+                                                        Background="Transparent"
+                                                        BorderBrush="{StaticResource PawsBorderBrush}"
+                                                        BorderThickness="0,0,0,1"
+                                                        Loaded="Row_Loaded"
+                                                        PointerEntered="Row_PointerEntered"
+                                                        PointerExited="Row_PointerExited">
+                                                    <Border.BackgroundTransition>
+                                                        <BrushTransition Duration="0:0:0.12"/>
+                                                    </Border.BackgroundTransition>
+
+                                                    <Grid ColumnSpacing="12">
+                                                        <!-- These widths MUST match the header row above -->
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="*"/>
+                                                            <ColumnDefinition Width="140"/>
+                                                            <ColumnDefinition Width="110"/>
+                                                            <ColumnDefinition Width="160"/>
+                                                            <ColumnDefinition Width="230"/>
+                                                        </Grid.ColumnDefinitions>
+
+                                                        <!-- USER -->
+                                                        <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="12"
+                                                                    VerticalAlignment="Center">
+                                                            <Border Width="36" Height="36" CornerRadius="18"
+                                                                    Background="{StaticResource PawsPrimarySoftBrush}">
+                                                                <TextBlock Text="{Binding Initials}"
+                                                                           FontSize="13" FontWeight="SemiBold"
+                                                                           Foreground="{StaticResource PawsPrimaryBrush}"
+                                                                           HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                            </Border>
+                                                            <StackPanel VerticalAlignment="Center" Spacing="1">
+                                                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                                                    <TextBlock Text="{Binding FullName}"
+                                                                               FontSize="14" FontWeight="SemiBold"
+                                                                               Foreground="{StaticResource PawsTextPrimaryBrush}"
+                                                                               TextTrimming="CharacterEllipsis"/>
+                                                                    <Border Style="{StaticResource PawsBadgeBase}"
+                                                                            Background="{StaticResource PawsHoverSurfaceBrush}"
+                                                                            Padding="8,1"
+                                                                            Visibility="{Binding SelfVisibility}">
+                                                                        <TextBlock Text="YOU"
+                                                                                   Style="{StaticResource PawsBadgeTextBase}"
+                                                                                   Foreground="{StaticResource PawsTextSecondaryBrush}"/>
+                                                                    </Border>
+                                                                </StackPanel>
+                                                                <TextBlock Text="{Binding Email}"
+                                                                           Style="{StaticResource PawsCaption}"
+                                                                           TextTrimming="CharacterEllipsis"/>
+                                                            </StackPanel>
+                                                        </StackPanel>
+
+                                                        <!-- ROLE -->
+                                                        <Border Grid.Column="1"
+                                                                Style="{StaticResource PawsBadgeBase}"
+                                                                Background="{Binding RoleBadgeBackground}">
+                                                            <TextBlock Text="{Binding RoleLabel}"
+                                                                       Style="{StaticResource PawsBadgeTextBase}"
+                                                                       Foreground="{Binding RoleBadgeForeground}"/>
+                                                        </Border>
+
+                                                        <!-- STATUS -->
+                                                        <Border Grid.Column="2"
+                                                                Style="{StaticResource PawsBadgeBase}"
+                                                                Background="{Binding StatusBadgeBackground}">
+                                                            <TextBlock Text="{Binding StatusLabel}"
+                                                                       Style="{StaticResource PawsBadgeTextBase}"
+                                                                       Foreground="{Binding StatusBadgeForeground}"/>
+                                                        </Border>
+
+                                                        <!-- PHONE -->
+                                                        <TextBlock Grid.Column="3" Text="{Binding PhoneText}"
+                                                                   FontSize="13"
+                                                                   Foreground="{StaticResource PawsTextSecondaryBrush}"
+                                                                   VerticalAlignment="Center"
+                                                                   TextTrimming="CharacterEllipsis"/>
+
+                                                        <!-- ACTIONS -->
+                                                        <StackPanel Grid.Column="4" Orientation="Horizontal" Spacing="6"
+                                                                    HorizontalAlignment="Right" VerticalAlignment="Center">
+                                                            <Button Content="Edit"
+                                                                    Style="{StaticResource PawsSecondaryButton}"
+                                                                    MinHeight="32" Padding="12,4" FontSize="12"
+                                                                    Click="EditUser_Click" Tag="{Binding}"
+                                                                    Visibility="{Binding EditButtonVisibility}"/>
+                                                            <Button Content="Deactivate"
+                                                                    Style="{StaticResource PawsGhostButton}"
+                                                                    Foreground="{StaticResource PawsErrorBrush}"
+                                                                    MinHeight="32" Padding="10,4" FontSize="12"
+                                                                    Click="DeactivateUser_Click" Tag="{Binding}"
+                                                                    Visibility="{Binding DeactivateButtonVisibility}"/>
+                                                            <Button Content="Activate"
+                                                                    Style="{StaticResource PawsGhostButton}"
+                                                                    Foreground="{StaticResource PawsSuccessBrush}"
+                                                                    MinHeight="32" Padding="10,4" FontSize="12"
+                                                                    Click="ActivateUser_Click" Tag="{Binding}"
+                                                                    Visibility="{Binding ActivateButtonVisibility}"/>
+                                                        </StackPanel>
+                                                    </Grid>
+                                                </Border>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </Grid>
+                            </Grid>
+                        </ScrollViewer>
+                    </StackPanel>
+                </Border>
+
+            </StackPanel>
+        </ScrollViewer>
+
+        <!-- =====================================================================
+             FORM POPUP: sits on top of the whole page. The overlay itself is
+             shown/hidden from code (WatchPanel).
+             ===================================================================== -->
+        <Grid x:Name="FormOverlay"
+              Grid.RowSpan="4"
+              Margin="-32,-28,-32,0"
+              Background="#8C1F2A44"
+              Visibility="Collapsed">
+
+            <!-- Create / edit user -->
+            <Border x:Name="FormPanel" Visibility="Collapsed"
+                    Style="{StaticResource PawsCard}" Padding="24"
+                    MaxWidth="600" Margin="24,96,24,24"
+                    HorizontalAlignment="Stretch" VerticalAlignment="Center">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel Spacing="12" Padding="0,0,12,0">
+
+                        <TextBlock x:Name="FormTitle" Text="Add User"
+                                   Style="{StaticResource PawsSectionTitle}" TextWrapping="Wrap"/>
+
+                        <TextBox x:Name="FullNameBox" Header="Full Name"/>
+
+                        <TextBox x:Name="EmailBox" Header="Email"/>
+
+                        <TextBox x:Name="PhoneBox" Header="Phone (optional)"/>
+
+                        <!-- Only shown when creating a new user; hidden when editing an existing one. -->
+                        <StackPanel x:Name="PasswordPanel" Spacing="12">
+                            <PasswordBox x:Name="PasswordInput" Header="Password" PlaceholderText="At least 8 characters"/>
+                            <PasswordBox x:Name="ConfirmPasswordInput" Header="Confirm Password"/>
+                        </StackPanel>
+
+                        <ComboBox x:Name="RoleBox" Header="Role" HorizontalAlignment="Stretch">
+                            <ComboBoxItem Content="Administrator"/>
+                            <ComboBoxItem Content="Staff"/>
+                            <ComboBoxItem Content="Veterinarian"/>
+                        </ComboBox>
+
+                        <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,4,0,0">
+                            <Button x:Name="SaveButton" Content="Save" Style="{StaticResource PawsPrimaryButton}" Click="Save_Click"/>
+                            <Button Content="Cancel" Style="{StaticResource PawsSecondaryButton}" Click="CancelForm_Click"/>
+                        </StackPanel>
+
+                    </StackPanel>
+                </ScrollViewer>
+            </Border>
+
+            <!-- Error bar shown inside the popup -->
+            <InfoBar x:Name="PopupErrorBar"
+                     Severity="Error"
+                     IsOpen="False"
+                     IsClosable="True"
+                     VerticalAlignment="Top"
+                     HorizontalAlignment="Center"
+                     MaxWidth="600"
+                     Margin="24,24,24,0"/>
+        </Grid>
+    </Grid>
+</Page>

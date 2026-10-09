@@ -1,0 +1,628 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Page
+    x:Class="PAWS.winui.Views.SystemAdministrationPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    Loaded="Page_Loaded"
+    Unloaded="Page_Unloaded"
+    SizeChanged="Page_SizeChanged">
+
+    <Page.Resources>
+        <Style TargetType="TextBox" BasedOn="{StaticResource PawsTextBox}"/>
+        <Style TargetType="ComboBox" BasedOn="{StaticResource PawsComboBox}"/>
+
+        <Style x:Key="StatIconTile" TargetType="Border">
+            <Setter Property="Width" Value="40"/>
+            <Setter Property="Height" Value="40"/>
+            <Setter Property="CornerRadius" Value="10"/>
+            <Setter Property="HorizontalAlignment" Value="Left"/>
+        </Style>
+    </Page.Resources>
+
+    <Grid Background="{StaticResource PawsBackgroundBrush}" Padding="32,28,32,0">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- ================= HERO BANNER ================= -->
+        <Border x:Name="HeroCard" Grid.Row="0"
+                CornerRadius="16"
+                BorderBrush="{StaticResource PawsBorderBrush}"
+                BorderThickness="1"
+                MinHeight="130">
+            <Border.Background>
+                <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                    <GradientStop Color="{StaticResource PawsPrimarySoftColor}" Offset="0"/>
+                    <GradientStop Color="{StaticResource PawsSurfaceColor}" Offset="0.45"/>
+                    <GradientStop Color="{StaticResource PawsSurfaceColor}" Offset="1"/>
+                </LinearGradientBrush>
+            </Border.Background>
+
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <StackPanel x:Name="HeroText" Grid.Column="0" Spacing="6"
+                            Margin="28,20,16,20" VerticalAlignment="Center">
+                    <TextBlock Text="SYSTEM" Style="{StaticResource PawsOverline}"/>
+                    <TextBlock Text="System Administration" Style="{StaticResource PawsPageTitle}"/>
+                    <TextBlock Text="Manage companies, subscription plans and compare performance across all tenants."
+                               Style="{StaticResource PawsCaption}" TextWrapping="Wrap"/>
+
+                    <StackPanel Orientation="Horizontal" Spacing="12" Margin="0,6,0,0">
+                        <Button Style="{StaticResource PawsSecondaryButton}" Click="Refresh_Click">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <FontIcon Glyph="&#xE72C;" FontSize="14"/>
+                                <TextBlock Text="Refresh"/>
+                            </StackPanel>
+                        </Button>
+                        <ProgressRing x:Name="Busy" IsActive="False" Width="24" Height="24"/>
+                    </StackPanel>
+                </StackPanel>
+
+                <!-- Banner picture: Assets/dashboard-hero-systemadmin.png (dog, cat and tagline are part of the picture) -->
+                <Grid x:Name="HeroPicture" Grid.Column="1"
+                      HorizontalAlignment="Right" VerticalAlignment="Bottom">
+                    <Image x:Name="HeroImage" Height="170" Stretch="Uniform">
+                        <Image.Source>
+                            <BitmapImage UriSource="ms-appx:///Assets/dashboard-hero-systemadmin.png"
+                                         DecodePixelHeight="480"/>
+                        </Image.Source>
+                    </Image>
+
+                    <!-- Soft fade on the picture's left edge so it blends into the card -->
+                    <Border Width="120" HorizontalAlignment="Left" IsHitTestVisible="False">
+                        <Border.Background>
+                            <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                                <GradientStop Color="#FFFFFFFF" Offset="0"/>
+                                <GradientStop Color="#00FFFFFF" Offset="1"/>
+                            </LinearGradientBrush>
+                        </Border.Background>
+                    </Border>
+                </Grid>
+            </Grid>
+        </Border>
+
+        <!-- ================= MESSAGES ================= -->
+        <StackPanel Grid.Row="1" Spacing="8" Margin="0,12,0,0">
+            <InfoBar x:Name="ErrorBar" Severity="Error" IsOpen="False" IsClosable="True"/>
+            <InfoBar x:Name="SuccessBar" Severity="Success" IsOpen="False" IsClosable="True"/>
+        </StackPanel>
+
+        <!-- ================= TABS ================= -->
+        <Pivot x:Name="MainPivot" Grid.Row="2" Margin="0,8,0,0" SelectionChanged="MainPivot_SelectionChanged">
+
+            <!-- ===== COMPANIES ===== -->
+            <PivotItem Header="Companies">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel Spacing="16" Padding="0,16,0,32" MaxWidth="1400">
+
+                        <!-- System-wide stats -->
+                        <Grid ColumnSpacing="16">
+                            <Grid.ChildrenTransitions>
+                                <TransitionCollection>
+                                    <EntranceThemeTransition FromVerticalOffset="20" IsStaggeringEnabled="True"/>
+                                </TransitionCollection>
+                            </Grid.ChildrenTransitions>
+
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+
+                            <Border Grid.Column="0" Style="{StaticResource PawsCard}">
+                                <StackPanel Spacing="12">
+                                    <Border Style="{StaticResource StatIconTile}" Background="{StaticResource PawsPrimarySoftBrush}">
+                                        <FontIcon Glyph="&#xE80F;" FontSize="18" Foreground="{StaticResource PawsPrimaryBrush}"/>
+                                    </Border>
+                                    <StackPanel Spacing="2">
+                                        <TextBlock x:Name="TotalCompaniesText" Text="0" Style="{StaticResource PawsStatNumber}"/>
+                                        <TextBlock Text="TOTAL COMPANIES" Style="{StaticResource PawsOverline}"/>
+                                    </StackPanel>
+                                </StackPanel>
+                            </Border>
+
+                            <Border Grid.Column="1" Style="{StaticResource PawsCard}">
+                                <StackPanel Spacing="12">
+                                    <Border Style="{StaticResource StatIconTile}" Background="{StaticResource PawsSuccessSoftBrush}">
+                                        <FontIcon Glyph="&#xE73E;" FontSize="18" Foreground="{StaticResource PawsSuccessBrush}"/>
+                                    </Border>
+                                    <StackPanel Spacing="2">
+                                        <TextBlock x:Name="ActiveCompaniesText" Text="0" Style="{StaticResource PawsStatNumber}"/>
+                                        <TextBlock Text="ACTIVE COMPANIES" Style="{StaticResource PawsOverline}"/>
+                                    </StackPanel>
+                                </StackPanel>
+                            </Border>
+
+                            <Border Grid.Column="2" Style="{StaticResource PawsCard}">
+                                <StackPanel Spacing="12">
+                                    <Border Style="{StaticResource StatIconTile}" Background="{StaticResource PawsInfoSoftBrush}">
+                                        <FontIcon Glyph="&#xE716;" FontSize="18" Foreground="{StaticResource PawsInfoBrush}"/>
+                                    </Border>
+                                    <StackPanel Spacing="2">
+                                        <TextBlock x:Name="TotalUsersText" Text="0" Style="{StaticResource PawsStatNumber}"/>
+                                        <TextBlock Text="TOTAL USERS (ALL COMPANIES)" Style="{StaticResource PawsOverline}"/>
+                                    </StackPanel>
+                                </StackPanel>
+                            </Border>
+                        </Grid>
+
+                        <!-- Empty state -->
+                        <StackPanel x:Name="EmptyState" Visibility="Collapsed"
+                                    Spacing="10" HorizontalAlignment="Center" Margin="0,32,0,0">
+                            <Image Source="ms-appx:///Assets/paws-icon.png" Width="72" Height="72" Opacity="0.35"/>
+                            <TextBlock Text="No companies yet" Style="{StaticResource PawsSectionTitle}" HorizontalAlignment="Center"/>
+                            <TextBlock Text="Companies will appear here once they are created."
+                                       Style="{StaticResource PawsCaption}" HorizontalAlignment="Center"/>
+                        </StackPanel>
+
+                        <!-- Companies table -->
+                        <Border x:Name="TableCard" Style="{StaticResource PawsCard}" Padding="0,0,0,8">
+                            <StackPanel>
+                                <StackPanel Padding="24,20,24,14" Spacing="2">
+                                    <TextBlock Text="All Companies" Style="{StaticResource PawsSectionTitle}"/>
+                                    <TextBlock x:Name="TotalText" Text=" " Style="{StaticResource PawsCaption}"/>
+                                </StackPanel>
+
+                                <ScrollViewer x:Name="TableScroll"
+                                              HorizontalScrollBarVisibility="Auto"
+                                              VerticalScrollBarVisibility="Disabled"
+                                              HorizontalScrollMode="Auto"
+                                              VerticalScrollMode="Disabled"
+                                              SizeChanged="TableScroll_SizeChanged">
+                                    <Grid x:Name="TableGrid" MinWidth="1120">
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                        </Grid.RowDefinitions>
+
+                                        <!-- Header row -->
+                                        <Grid Grid.Row="0" Padding="24,10"
+                                              Background="{StaticResource PawsBackgroundBrush}"
+                                              BorderBrush="{StaticResource PawsBorderBrush}"
+                                              BorderThickness="0,1,0,1"
+                                              ColumnSpacing="12">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="2*"/>
+                                                <ColumnDefinition Width="110"/>
+                                                <ColumnDefinition Width="170"/>
+                                                <ColumnDefinition Width="2*"/>
+                                                <ColumnDefinition Width="110"/>
+                                                <ColumnDefinition Width="300"/>
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock Grid.Column="0" Text="COMPANY" Style="{StaticResource PawsOverline}"/>
+                                            <TextBlock Grid.Column="1" Text="STATUS" Style="{StaticResource PawsOverline}"/>
+                                            <TextBlock Grid.Column="2" Text="PLAN" Style="{StaticResource PawsOverline}"/>
+                                            <TextBlock Grid.Column="3" Text="DATABASE" Style="{StaticResource PawsOverline}"/>
+                                            <TextBlock Grid.Column="4" Text="CREATED" Style="{StaticResource PawsOverline}"/>
+                                            <TextBlock Grid.Column="5" Text="ACTION" Style="{StaticResource PawsOverline}" HorizontalAlignment="Right"/>
+                                        </Grid>
+
+                                        <!-- Data rows -->
+                                        <Grid Grid.Row="1" x:Name="ListHost">
+                                            <Grid.OpacityTransition>
+                                                <ScalarTransition Duration="0:0:0.2"/>
+                                            </Grid.OpacityTransition>
+
+                                            <ItemsControl x:Name="CompaniesList">
+                                                <ItemsControl.ItemTemplate>
+                                                    <DataTemplate>
+                                                        <Border Padding="24,14"
+                                                                Background="Transparent"
+                                                                BorderBrush="{StaticResource PawsBorderBrush}"
+                                                                BorderThickness="0,0,0,1"
+                                                                Loaded="Row_Loaded"
+                                                                PointerEntered="Row_PointerEntered"
+                                                                PointerExited="Row_PointerExited">
+                                                            <Border.BackgroundTransition>
+                                                                <BrushTransition Duration="0:0:0.12"/>
+                                                            </Border.BackgroundTransition>
+
+                                                            <Grid ColumnSpacing="12">
+                                                                <!-- These widths MUST match the header row above -->
+                                                                <Grid.ColumnDefinitions>
+                                                                    <ColumnDefinition Width="2*"/>
+                                                                    <ColumnDefinition Width="110"/>
+                                                                    <ColumnDefinition Width="170"/>
+                                                                    <ColumnDefinition Width="2*"/>
+                                                                    <ColumnDefinition Width="110"/>
+                                                                    <ColumnDefinition Width="300"/>
+                                                                </Grid.ColumnDefinitions>
+
+                                                                <!-- COMPANY -->
+                                                                <StackPanel Grid.Column="0" VerticalAlignment="Center" Spacing="2">
+                                                                    <TextBlock Text="{Binding CodeText}"
+                                                                               FontSize="13" FontWeight="SemiBold"
+                                                                               Foreground="{StaticResource PawsPrimaryBrush}"
+                                                                               TextTrimming="CharacterEllipsis"/>
+                                                                    <TextBlock Text="{Binding NameText}"
+                                                                               FontSize="14" FontWeight="SemiBold"
+                                                                               Foreground="{StaticResource PawsTextPrimaryBrush}"
+                                                                               TextTrimming="CharacterEllipsis"/>
+                                                                </StackPanel>
+
+                                                                <!-- STATUS + TERMS -->
+                                                                <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="4">
+                                                                    <Border Style="{StaticResource PawsBadgeBase}"
+                                                                            Background="{Binding StatusBadgeBackground}">
+                                                                        <TextBlock Text="{Binding StatusLabel}"
+                                                                                   Style="{StaticResource PawsBadgeTextBase}"
+                                                                                   Foreground="{Binding StatusBadgeForeground}"/>
+                                                                    </Border>
+                                                                    <TextBlock Text="{Binding TermsLabel}"
+                                                                               FontSize="11" FontWeight="SemiBold"
+                                                                               Foreground="{Binding TermsForeground}"
+                                                                               TextWrapping="Wrap"/>
+                                                                </StackPanel>
+
+                                                                <!-- PLAN -->
+                                                                <StackPanel Grid.Column="2" VerticalAlignment="Center" Spacing="3">
+                                                                    <Border Style="{StaticResource PawsBadgeBase}"
+                                                                            Background="{Binding PlanBadgeBackground}">
+                                                                        <TextBlock Text="{Binding PlanLabel}"
+                                                                                   Style="{StaticResource PawsBadgeTextBase}"
+                                                                                   Foreground="{Binding PlanBadgeForeground}"/>
+                                                                    </Border>
+                                                                    <TextBlock Text="{Binding BranchLimitText}"
+                                                                               Style="{StaticResource PawsCaption}"/>
+                                                                </StackPanel>
+
+                                                                <!-- DATABASE -->
+                                                                <StackPanel Grid.Column="3" VerticalAlignment="Center" Spacing="2">
+                                                                    <TextBlock Text="{Binding DatabaseName}"
+                                                                               FontSize="13"
+                                                                               Foreground="{StaticResource PawsTextPrimaryBrush}"
+                                                                               TextTrimming="CharacterEllipsis"/>
+                                                                    <TextBlock Text="{Binding ServerText}"
+                                                                               Style="{StaticResource PawsCaption}"
+                                                                               TextTrimming="CharacterEllipsis"/>
+                                                                </StackPanel>
+
+                                                                <!-- CREATED -->
+                                                                <TextBlock Grid.Column="4" Text="{Binding CreatedText}"
+                                                                           Style="{StaticResource PawsCaption}"
+                                                                           FontSize="13" VerticalAlignment="Center"/>
+
+                                                                <!-- ACTIONS -->
+                                                                <StackPanel Grid.Column="5" Orientation="Horizontal" Spacing="6"
+                                                                            HorizontalAlignment="Right" VerticalAlignment="Center">
+                                                                    <Button Content="Edit"
+                                                                            Style="{StaticResource PawsSecondaryButton}"
+                                                                            MinHeight="32" Padding="12,4" FontSize="12"
+                                                                            Click="Edit_Click" Tag="{Binding}"/>
+                                                                    <Button Content="Change Plan"
+                                                                            Style="{StaticResource PawsPrimaryButton}"
+                                                                            MinHeight="32" Padding="12,4" FontSize="12"
+                                                                            Click="ChangePlan_Click" Tag="{Binding}"/>
+                                                                    <Button Content="Deactivate"
+                                                                            Style="{StaticResource PawsGhostButton}"
+                                                                            Foreground="{StaticResource PawsErrorBrush}"
+                                                                            MinHeight="32" Padding="10,4" FontSize="12"
+                                                                            Click="Deactivate_Click" Tag="{Binding}"
+                                                                            Visibility="{Binding DeactivateVisibility}"/>
+                                                                    <Button Content="Activate"
+                                                                            Style="{StaticResource PawsGhostButton}"
+                                                                            Foreground="{StaticResource PawsSuccessBrush}"
+                                                                            MinHeight="32" Padding="10,4" FontSize="12"
+                                                                            Click="Activate_Click" Tag="{Binding}"
+                                                                            Visibility="{Binding ActivateVisibility}"/>
+                                                                </StackPanel>
+                                                            </Grid>
+                                                        </Border>
+                                                    </DataTemplate>
+                                                </ItemsControl.ItemTemplate>
+                                            </ItemsControl>
+                                        </Grid>
+                                    </Grid>
+                                </ScrollViewer>
+                            </StackPanel>
+                        </Border>
+
+                    </StackPanel>
+                </ScrollViewer>
+            </PivotItem>
+
+            <!-- ===== BUSINESS INTELLIGENCE ===== -->
+            <PivotItem Header="Business Intelligence">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel Padding="0,16,0,32" Spacing="16" MaxWidth="1400">
+
+                        <TextBlock x:Name="BiMessage" Visibility="Collapsed" Style="{StaticResource PawsCaption}"/>
+
+                        <!-- ===== FOUR SUMMARY CARDS (column layout is set from code) ===== -->
+                        <Grid x:Name="BiKpiGrid" ColumnSpacing="16" RowSpacing="16">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+
+                            <!-- Total Pets -->
+                            <Border x:Name="KpiPets" Grid.Column="0" Style="{StaticResource PawsCard}" Padding="20">
+                                <StackPanel Spacing="10">
+                                    <Grid ColumnSpacing="14">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <Border Style="{StaticResource StatIconTile}" VerticalAlignment="Top"
+                                                Background="{StaticResource PawsPrimarySoftBrush}">
+                                            <FontIcon Glyph="&#xE006;" FontSize="18" Foreground="{StaticResource PawsPrimaryBrush}"/>
+                                        </Border>
+                                        <StackPanel Grid.Column="1" Spacing="2">
+                                            <TextBlock Text="Total Pets" Style="{StaticResource PawsCaption}"/>
+                                            <TextBlock x:Name="BiPetsValue" Text="–" Style="{StaticResource PawsStatNumber}"/>
+                                        </StackPanel>
+                                    </Grid>
+                                    <TextBlock x:Name="BiPetsSub" Text=" " Style="{StaticResource PawsCaption}" TextWrapping="Wrap"/>
+                                    <Border x:Name="BiPetsShare" Height="8" CornerRadius="4"
+                                            Background="{StaticResource PawsHoverSurfaceBrush}"/>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- Total Users -->
+                            <Border x:Name="KpiUsers" Grid.Column="1" Style="{StaticResource PawsCard}" Padding="20">
+                                <StackPanel Spacing="10">
+                                    <Grid ColumnSpacing="14">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <Border Style="{StaticResource StatIconTile}" VerticalAlignment="Top"
+                                                Background="{StaticResource PawsInfoSoftBrush}">
+                                            <FontIcon Glyph="&#xE716;" FontSize="18" Foreground="{StaticResource PawsInfoBrush}"/>
+                                        </Border>
+                                        <StackPanel Grid.Column="1" Spacing="2">
+                                            <TextBlock Text="Total Users" Style="{StaticResource PawsCaption}"/>
+                                            <TextBlock x:Name="BiUsersValue" Text="–" Style="{StaticResource PawsStatNumber}"/>
+                                        </StackPanel>
+                                    </Grid>
+                                    <TextBlock x:Name="BiUsersSub" Text=" " Style="{StaticResource PawsCaption}" TextWrapping="Wrap"/>
+                                    <Border x:Name="BiUsersShare" Height="8" CornerRadius="4"
+                                            Background="{StaticResource PawsHoverSurfaceBrush}"/>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- Completed Adoptions -->
+                            <Border x:Name="KpiAdoptions" Grid.Column="2" Style="{StaticResource PawsCard}" Padding="20">
+                                <StackPanel Spacing="10">
+                                    <Grid ColumnSpacing="14">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <Border Style="{StaticResource StatIconTile}" VerticalAlignment="Top"
+                                                Background="{StaticResource PawsSuccessSoftBrush}">
+                                            <FontIcon Glyph="&#xE80F;" FontSize="18" Foreground="{StaticResource PawsSuccessBrush}"/>
+                                        </Border>
+                                        <StackPanel Grid.Column="1" Spacing="2">
+                                            <TextBlock Text="Completed Adoptions" Style="{StaticResource PawsCaption}"/>
+                                            <TextBlock x:Name="BiAdoptionsValue" Text="–" Style="{StaticResource PawsStatNumber}"/>
+                                        </StackPanel>
+                                    </Grid>
+                                    <TextBlock x:Name="BiAdoptionsSub" Text=" " Style="{StaticResource PawsCaption}" TextWrapping="Wrap"/>
+                                    <Border x:Name="BiAdoptionsShare" Height="8" CornerRadius="4"
+                                            Background="{StaticResource PawsHoverSurfaceBrush}"/>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- Total Income -->
+                            <Border x:Name="KpiIncome" Grid.Column="3" Style="{StaticResource PawsCard}" Padding="20">
+                                <StackPanel Spacing="10">
+                                    <Grid ColumnSpacing="14">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <Border Style="{StaticResource StatIconTile}" VerticalAlignment="Top"
+                                                Background="{StaticResource PawsWarningSoftBrush}">
+                                            <FontIcon Glyph="&#xE825;" FontSize="18" Foreground="{StaticResource PawsWarningBrush}"/>
+                                        </Border>
+                                        <StackPanel Grid.Column="1" Spacing="2">
+                                            <TextBlock Text="Total Income (PHP)" Style="{StaticResource PawsCaption}"/>
+                                            <TextBlock x:Name="BiIncomeValue" Text="–" Style="{StaticResource PawsStatNumber}"
+                                                       FontSize="26"/>
+                                        </StackPanel>
+                                    </Grid>
+                                    <TextBlock x:Name="BiIncomeSub" Text=" " Style="{StaticResource PawsCaption}" TextWrapping="Wrap"/>
+                                    <Border x:Name="BiIncomeShare" Height="8" CornerRadius="4"
+                                            Background="{StaticResource PawsHoverSurfaceBrush}"/>
+                                </StackPanel>
+                            </Border>
+                        </Grid>
+
+                        <!-- ===== ROW 2: pets chart, users donut, performance table (layout set from code) ===== -->
+                        <Grid x:Name="BiRow2Grid" ColumnSpacing="16" RowSpacing="16">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="1.4*"/>
+                            </Grid.ColumnDefinitions>
+
+                            <!-- Pets by Company -->
+                            <Border x:Name="BiPetsCard" Grid.Column="0" Style="{StaticResource PawsCard}" Padding="20">
+                                <StackPanel Spacing="12">
+                                    <StackPanel Orientation="Horizontal" Spacing="8">
+                                        <FontIcon Glyph="&#xE006;" FontSize="16" Foreground="{StaticResource PawsPrimaryBrush}"
+                                                  VerticalAlignment="Center"/>
+                                        <TextBlock Text="Pets by Company" Style="{StaticResource PawsSectionTitle}"/>
+                                    </StackPanel>
+                                    <Grid x:Name="PetsChart"/>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- Users by Company (donut) -->
+                            <Border x:Name="BiUsersCard" Grid.Column="1" Style="{StaticResource PawsCard}" Padding="20">
+                                <StackPanel Spacing="12">
+                                    <StackPanel Orientation="Horizontal" Spacing="8">
+                                        <FontIcon Glyph="&#xE716;" FontSize="16" Foreground="{StaticResource PawsInfoBrush}"
+                                                  VerticalAlignment="Center"/>
+                                        <TextBlock Text="Users by Company" Style="{StaticResource PawsSectionTitle}"/>
+                                    </StackPanel>
+
+                                    <TextBlock x:Name="DonutMessage" Visibility="Collapsed" Style="{StaticResource PawsCaption}"/>
+
+                                    <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled"
+                                                  HorizontalScrollMode="Auto" VerticalScrollMode="Disabled">
+                                        <StackPanel Orientation="Horizontal" Spacing="24" Padding="0,4,0,4">
+                                            <Grid Width="180" Height="180">
+                                                <Canvas x:Name="DonutCanvas" Width="180" Height="180"/>
+                                                <Ellipse Width="104" Height="104" IsHitTestVisible="False"
+                                                         Fill="{StaticResource PawsSurfaceBrush}"/>
+                                                <StackPanel x:Name="DonutCenter" IsHitTestVisible="False"
+                                                            HorizontalAlignment="Center" VerticalAlignment="Center">
+                                                    <TextBlock x:Name="DonutCenterValue" Text="0"
+                                                               FontSize="28" FontWeight="Bold" HorizontalAlignment="Center"
+                                                               Foreground="{StaticResource PawsTextPrimaryBrush}"/>
+                                                    <TextBlock Text="TOTAL USERS" Style="{StaticResource PawsOverline}"
+                                                               HorizontalAlignment="Center"/>
+                                                </StackPanel>
+                                            </Grid>
+                                            <StackPanel x:Name="DonutLegend" Spacing="10" MinWidth="200" VerticalAlignment="Center"/>
+                                        </StackPanel>
+                                    </ScrollViewer>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- Company Performance Overview -->
+                            <Border x:Name="BiTableCard" Grid.Column="2" Style="{StaticResource PawsCard}" Padding="0,0,0,8">
+                                <StackPanel>
+                                    <StackPanel Orientation="Horizontal" Spacing="8" Padding="20,20,20,14">
+                                        <FontIcon Glyph="&#xE9D9;" FontSize="16" Foreground="{StaticResource PawsPrimaryBrush}"
+                                                  VerticalAlignment="Center"/>
+                                        <TextBlock Text="Company Performance Overview" Style="{StaticResource PawsSectionTitle}"/>
+                                    </StackPanel>
+
+                                    <!-- Header (these widths MUST match the rows built in code: PerfWidths) -->
+                                    <Grid Padding="12,10"
+                                          Background="{StaticResource PawsBackgroundBrush}"
+                                          BorderBrush="{StaticResource PawsBorderBrush}"
+                                          BorderThickness="0,1,0,1"
+                                          ColumnSpacing="8">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="1.7*"/>
+                                            <ColumnDefinition Width="0.8*"/>
+                                            <ColumnDefinition Width="0.8*"/>
+                                            <ColumnDefinition Width="1*"/>
+                                            <ColumnDefinition Width="1.4*"/>
+                                            <ColumnDefinition Width="0.9*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Grid.Column="0" Text="COMPANY" Style="{StaticResource PawsOverline}"/>
+                                        <TextBlock Grid.Column="1" Text="PETS" Style="{StaticResource PawsOverline}" HorizontalAlignment="Right"/>
+                                        <TextBlock Grid.Column="2" Text="USERS" Style="{StaticResource PawsOverline}" HorizontalAlignment="Right"/>
+                                        <TextBlock Grid.Column="3" Text="ADOPTIONS" Style="{StaticResource PawsOverline}" HorizontalAlignment="Right"/>
+                                        <TextBlock Grid.Column="4" Text="INCOME (PHP)" Style="{StaticResource PawsOverline}" HorizontalAlignment="Right"/>
+                                        <TextBlock Grid.Column="5" Text="BRANCHES" Style="{StaticResource PawsOverline}" HorizontalAlignment="Right"/>
+                                    </Grid>
+
+                                    <StackPanel x:Name="PerfRows"/>
+                                </StackPanel>
+                            </Border>
+                        </Grid>
+
+                        <!-- ===== ROW 3: adoptions chart, income bars (layout set from code) ===== -->
+                        <Grid x:Name="BiRow3Grid" ColumnSpacing="16" RowSpacing="16">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+
+                            <!-- Completed Adoptions by Company -->
+                            <Border x:Name="BiAdoptionsCard" Grid.Column="0" Style="{StaticResource PawsCard}" Padding="20">
+                                <StackPanel Spacing="12">
+                                    <StackPanel Orientation="Horizontal" Spacing="8">
+                                        <FontIcon Glyph="&#xE80F;" FontSize="16" Foreground="{StaticResource PawsSuccessBrush}"
+                                                  VerticalAlignment="Center"/>
+                                        <TextBlock Text="Completed Adoptions by Company" Style="{StaticResource PawsSectionTitle}"/>
+                                    </StackPanel>
+                                    <Grid x:Name="AdoptionsChart"/>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- Income by Company -->
+                            <Border x:Name="BiIncomeCard" Grid.Column="1" Style="{StaticResource PawsCard}" Padding="20">
+                                <StackPanel Spacing="12">
+                                    <StackPanel Orientation="Horizontal" Spacing="8">
+                                        <FontIcon Glyph="&#xE825;" FontSize="16" Foreground="{StaticResource PawsWarningBrush}"
+                                                  VerticalAlignment="Center"/>
+                                        <TextBlock Text="Income by Company (PHP)" Style="{StaticResource PawsSectionTitle}"/>
+                                    </StackPanel>
+                                    <StackPanel x:Name="IncomeBars" Spacing="12" Padding="0,8,0,8"/>
+                                </StackPanel>
+                            </Border>
+                        </Grid>
+
+                    </StackPanel>
+                </ScrollViewer>
+            </PivotItem>
+
+        </Pivot>
+
+        <!-- =====================================================================
+             FORM POPUP: sits on top of the whole page. Only one panel shows at a
+             time. The overlay itself is shown/hidden from code (WatchPanel).
+             ===================================================================== -->
+        <Grid x:Name="FormOverlay"
+              Grid.RowSpan="3"
+              Margin="-32,-28,-32,0"
+              Background="#8C1F2A44"
+              Visibility="Collapsed">
+
+            <!-- Edit company -->
+            <Border x:Name="EditFormPanel" Visibility="Collapsed"
+                    Style="{StaticResource PawsCard}" Padding="24"
+                    MaxWidth="560" Margin="24,96,24,24"
+                    HorizontalAlignment="Stretch" VerticalAlignment="Center">
+                <StackPanel Spacing="12">
+                    <TextBlock x:Name="EditFormTitle" Text="Edit Company" Style="{StaticResource PawsSectionTitle}"/>
+                    <TextBox x:Name="CompanyNameBox" Header="Company Name"/>
+                    <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,4,0,0">
+                        <Button Content="Save" Style="{StaticResource PawsPrimaryButton}" Click="SaveEdit_Click"/>
+                        <Button Content="Cancel" Style="{StaticResource PawsSecondaryButton}" Click="CancelEdit_Click"/>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <!-- Change plan -->
+            <Border x:Name="PlanFormPanel" Visibility="Collapsed"
+                    Style="{StaticResource PawsCard}" Padding="24"
+                    MaxWidth="560" Margin="24,96,24,24"
+                    HorizontalAlignment="Stretch" VerticalAlignment="Center">
+                <StackPanel Spacing="12">
+                    <TextBlock x:Name="PlanFormTitle" Text="Change Plan" Style="{StaticResource PawsSectionTitle}"/>
+                    <Border Background="{StaticResource PawsPrimarySoftBrush}" CornerRadius="8" Padding="12,8">
+                        <TextBlock x:Name="PlanSummaryText"
+                                   Text="Choose a plan to see its price and branch limit."
+                                   FontSize="12" TextWrapping="Wrap"
+                                   Foreground="{StaticResource PawsTextPrimaryBrush}"/>
+                    </Border>
+                    <ComboBox x:Name="PlanBox" Header="Subscription Plan" HorizontalAlignment="Stretch"
+                              DisplayMemberPath="DisplayText"
+                              SelectionChanged="PlanBox_SelectionChanged"/>
+                    <TextBlock Text="Changing the plan restarts the company's 30-day cycle."
+                               Style="{StaticResource PawsCaption}"/>
+                    <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,4,0,0">
+                        <Button Content="Save" Style="{StaticResource PawsPrimaryButton}" Click="SavePlan_Click"/>
+                        <Button Content="Cancel" Style="{StaticResource PawsSecondaryButton}" Click="CancelPlan_Click"/>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <!-- Error bar shown inside the popup -->
+            <InfoBar x:Name="PopupErrorBar"
+                     Severity="Error"
+                     IsOpen="False"
+                     IsClosable="True"
+                     VerticalAlignment="Top"
+                     HorizontalAlignment="Center"
+                     MaxWidth="560"
+                     Margin="24,24,24,0"/>
+        </Grid>
+    </Grid>
+</Page>

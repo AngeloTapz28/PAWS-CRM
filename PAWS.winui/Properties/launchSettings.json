@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "PAWS.winui (Package)": {
+      "commandName": "MsixPackage"
+    },
+    "PAWS.winui (Unpackaged)": {
+      "commandName": "Project"
+    }
+  }
+}

@@ -1,0 +1,391 @@
+<ResourceDictionary
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- ========================================================= -->
+    <!-- PAWS DESIGN SYSTEM - COLORS (single source of truth)      -->
+    <!-- ========================================================= -->
+    <Color x:Key="PawsPrimaryColor">#E8704F</Color>
+    <Color x:Key="PawsPrimaryHoverColor">#D95F3E</Color>
+    <Color x:Key="PawsPrimaryPressedColor">#C4512F</Color>
+    <Color x:Key="PawsPrimarySoftColor">#FDEDE7</Color>
+
+    <Color x:Key="PawsNavyColor">#1F2A44</Color>
+    <Color x:Key="PawsSlateColor">#454B6D</Color>
+
+    <Color x:Key="PawsBackgroundColor">#FAF8F6</Color>
+    <Color x:Key="PawsSurfaceColor">#FFFFFF</Color>
+    <Color x:Key="PawsBorderColor">#ECE7E2</Color>
+    <Color x:Key="PawsHoverSurfaceColor">#F5F1ED</Color>
+
+    <Color x:Key="PawsTextSecondaryColor">#6B7280</Color>
+    <Color x:Key="PawsTextDisabledColor">#A8ADB7</Color>
+
+    <Color x:Key="PawsSuccessColor">#2E9E6B</Color>
+    <Color x:Key="PawsSuccessSoftColor">#E3F5EC</Color>
+    <Color x:Key="PawsWarningColor">#D98A1E</Color>
+    <Color x:Key="PawsWarningSoftColor">#FDF1DC</Color>
+    <Color x:Key="PawsErrorColor">#D64545</Color>
+    <Color x:Key="PawsErrorSoftColor">#FCE8E8</Color>
+    <Color x:Key="PawsInfoColor">#3B6FD4</Color>
+    <Color x:Key="PawsInfoSoftColor">#E6EEFB</Color>
+
+    <!-- Brushes -->
+    <SolidColorBrush x:Key="PawsPrimaryBrush" Color="{StaticResource PawsPrimaryColor}"/>
+    <SolidColorBrush x:Key="PawsPrimaryHoverBrush" Color="{StaticResource PawsPrimaryHoverColor}"/>
+    <SolidColorBrush x:Key="PawsPrimaryPressedBrush" Color="{StaticResource PawsPrimaryPressedColor}"/>
+    <SolidColorBrush x:Key="PawsPrimarySoftBrush" Color="{StaticResource PawsPrimarySoftColor}"/>
+
+    <SolidColorBrush x:Key="PawsNavyBrush" Color="{StaticResource PawsNavyColor}"/>
+    <SolidColorBrush x:Key="PawsSlateBrush" Color="{StaticResource PawsSlateColor}"/>
+
+    <SolidColorBrush x:Key="PawsBackgroundBrush" Color="{StaticResource PawsBackgroundColor}"/>
+    <SolidColorBrush x:Key="PawsSurfaceBrush" Color="{StaticResource PawsSurfaceColor}"/>
+    <SolidColorBrush x:Key="PawsBorderBrush" Color="{StaticResource PawsBorderColor}"/>
+    <SolidColorBrush x:Key="PawsHoverSurfaceBrush" Color="{StaticResource PawsHoverSurfaceColor}"/>
+
+    <SolidColorBrush x:Key="PawsTextPrimaryBrush" Color="{StaticResource PawsNavyColor}"/>
+    <SolidColorBrush x:Key="PawsTextSecondaryBrush" Color="{StaticResource PawsTextSecondaryColor}"/>
+    <SolidColorBrush x:Key="PawsTextDisabledBrush" Color="{StaticResource PawsTextDisabledColor}"/>
+
+    <SolidColorBrush x:Key="PawsSuccessBrush" Color="{StaticResource PawsSuccessColor}"/>
+    <SolidColorBrush x:Key="PawsSuccessSoftBrush" Color="{StaticResource PawsSuccessSoftColor}"/>
+    <SolidColorBrush x:Key="PawsWarningBrush" Color="{StaticResource PawsWarningColor}"/>
+    <SolidColorBrush x:Key="PawsWarningSoftBrush" Color="{StaticResource PawsWarningSoftColor}"/>
+    <SolidColorBrush x:Key="PawsErrorBrush" Color="{StaticResource PawsErrorColor}"/>
+    <SolidColorBrush x:Key="PawsErrorSoftBrush" Color="{StaticResource PawsErrorSoftColor}"/>
+    <SolidColorBrush x:Key="PawsInfoBrush" Color="{StaticResource PawsInfoColor}"/>
+    <SolidColorBrush x:Key="PawsInfoSoftBrush" Color="{StaticResource PawsInfoSoftColor}"/>
+
+    <!-- ========================================================= -->
+    <!-- SHAPE TOKENS                                               -->
+    <!-- ========================================================= -->
+    <CornerRadius x:Key="PawsCardRadius">12</CornerRadius>
+    <CornerRadius x:Key="PawsControlRadius">8</CornerRadius>
+    <CornerRadius x:Key="PawsPillRadius">999</CornerRadius>
+
+    <!-- ========================================================= -->
+    <!-- ACCENT OVERRIDE: makes built-in WinUI controls coral       -->
+    <!-- ========================================================= -->
+    <SolidColorBrush x:Key="AccentFillColorDefaultBrush" Color="{StaticResource PawsPrimaryColor}"/>
+    <SolidColorBrush x:Key="AccentFillColorSecondaryBrush" Color="{StaticResource PawsPrimaryHoverColor}"/>
+    <SolidColorBrush x:Key="AccentFillColorTertiaryBrush" Color="{StaticResource PawsPrimaryPressedColor}"/>
+
+    <!-- Input focus: coral border instead of Windows blue -->
+    <SolidColorBrush x:Key="TextControlBorderBrushFocused" Color="{StaticResource PawsPrimaryColor}"/>
+    <SolidColorBrush x:Key="TextControlBackgroundFocused" Color="{StaticResource PawsSurfaceColor}"/>
+    <SolidColorBrush x:Key="TextControlBackgroundPointerOver" Color="{StaticResource PawsSurfaceColor}"/>
+    <SolidColorBrush x:Key="TextControlBackground" Color="{StaticResource PawsSurfaceColor}"/>
+    <SolidColorBrush x:Key="TextControlBorderBrush" Color="{StaticResource PawsBorderColor}"/>
+    <SolidColorBrush x:Key="TextControlBorderBrushPointerOver" Color="{StaticResource PawsTextDisabledColor}"/>
+    <Thickness x:Key="TextControlBorderThemeThicknessFocused">1.5</Thickness>
+
+    <!-- ========================================================= -->
+    <!-- TEXT STYLES                                                -->
+    <!-- ========================================================= -->
+    <Style x:Key="PawsPageTitle" TargetType="TextBlock">
+        <Setter Property="FontSize" Value="26"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+        <Setter Property="Foreground" Value="{StaticResource PawsTextPrimaryBrush}"/>
+    </Style>
+
+    <Style x:Key="PawsSectionTitle" TargetType="TextBlock">
+        <Setter Property="FontSize" Value="17"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+        <Setter Property="Foreground" Value="{StaticResource PawsTextPrimaryBrush}"/>
+    </Style>
+
+    <Style x:Key="PawsBodyText" TargetType="TextBlock">
+        <Setter Property="FontSize" Value="14"/>
+        <Setter Property="Foreground" Value="{StaticResource PawsTextPrimaryBrush}"/>
+        <Setter Property="TextWrapping" Value="Wrap"/>
+    </Style>
+
+    <Style x:Key="PawsCaption" TargetType="TextBlock">
+        <Setter Property="FontSize" Value="12"/>
+        <Setter Property="Foreground" Value="{StaticResource PawsTextSecondaryBrush}"/>
+    </Style>
+
+    <Style x:Key="PawsOverline" TargetType="TextBlock">
+        <Setter Property="FontSize" Value="11"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+        <Setter Property="CharacterSpacing" Value="80"/>
+        <Setter Property="Foreground" Value="{StaticResource PawsTextSecondaryBrush}"/>
+    </Style>
+
+    <Style x:Key="PawsStatNumber" TargetType="TextBlock">
+        <Setter Property="FontSize" Value="32"/>
+        <Setter Property="FontWeight" Value="Bold"/>
+        <Setter Property="Foreground" Value="{StaticResource PawsTextPrimaryBrush}"/>
+    </Style>
+
+    <!-- ========================================================= -->
+    <!-- CARD / SURFACE                                             -->
+    <!-- ========================================================= -->
+    <Style x:Key="PawsCard" TargetType="Border">
+        <Setter Property="Background" Value="{StaticResource PawsSurfaceBrush}"/>
+        <Setter Property="BorderBrush" Value="{StaticResource PawsBorderBrush}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="CornerRadius" Value="{StaticResource PawsCardRadius}"/>
+        <Setter Property="Padding" Value="20"/>
+    </Style>
+
+    <!-- ========================================================= -->
+    <!-- STATUS BADGES                                              -->
+    <!-- ========================================================= -->
+    <Style x:Key="PawsBadgeBase" TargetType="Border">
+        <Setter Property="CornerRadius" Value="{StaticResource PawsPillRadius}"/>
+        <Setter Property="Padding" Value="10,3"/>
+        <Setter Property="HorizontalAlignment" Value="Left"/>
+        <Setter Property="VerticalAlignment" Value="Center"/>
+    </Style>
+    <Style x:Key="PawsBadgeSuccess" TargetType="Border" BasedOn="{StaticResource PawsBadgeBase}">
+        <Setter Property="Background" Value="{StaticResource PawsSuccessSoftBrush}"/>
+    </Style>
+    <Style x:Key="PawsBadgeWarning" TargetType="Border" BasedOn="{StaticResource PawsBadgeBase}">
+        <Setter Property="Background" Value="{StaticResource PawsWarningSoftBrush}"/>
+    </Style>
+    <Style x:Key="PawsBadgeError" TargetType="Border" BasedOn="{StaticResource PawsBadgeBase}">
+        <Setter Property="Background" Value="{StaticResource PawsErrorSoftBrush}"/>
+    </Style>
+    <Style x:Key="PawsBadgeInfo" TargetType="Border" BasedOn="{StaticResource PawsBadgeBase}">
+        <Setter Property="Background" Value="{StaticResource PawsInfoSoftBrush}"/>
+    </Style>
+    <Style x:Key="PawsBadgeNeutral" TargetType="Border" BasedOn="{StaticResource PawsBadgeBase}">
+        <Setter Property="Background" Value="{StaticResource PawsHoverSurfaceBrush}"/>
+    </Style>
+
+    <Style x:Key="PawsBadgeTextBase" TargetType="TextBlock">
+        <Setter Property="FontSize" Value="11"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+    </Style>
+    <Style x:Key="PawsBadgeTextSuccess" TargetType="TextBlock" BasedOn="{StaticResource PawsBadgeTextBase}">
+        <Setter Property="Foreground" Value="{StaticResource PawsSuccessBrush}"/>
+    </Style>
+    <Style x:Key="PawsBadgeTextWarning" TargetType="TextBlock" BasedOn="{StaticResource PawsBadgeTextBase}">
+        <Setter Property="Foreground" Value="{StaticResource PawsWarningBrush}"/>
+    </Style>
+    <Style x:Key="PawsBadgeTextError" TargetType="TextBlock" BasedOn="{StaticResource PawsBadgeTextBase}">
+        <Setter Property="Foreground" Value="{StaticResource PawsErrorBrush}"/>
+    </Style>
+    <Style x:Key="PawsBadgeTextInfo" TargetType="TextBlock" BasedOn="{StaticResource PawsBadgeTextBase}">
+        <Setter Property="Foreground" Value="{StaticResource PawsInfoBrush}"/>
+    </Style>
+    <Style x:Key="PawsBadgeTextNeutral" TargetType="TextBlock" BasedOn="{StaticResource PawsBadgeTextBase}">
+        <Setter Property="Foreground" Value="{StaticResource PawsTextSecondaryBrush}"/>
+    </Style>
+
+    <!-- ========================================================= -->
+    <!-- BUTTON TEMPLATES (one per style; WinUI has no Style.Resources) -->
+    <!-- ========================================================= -->
+
+    <!-- PRIMARY template: coral -> darker coral on hover/press -->
+    <ControlTemplate x:Key="PawsPrimaryButtonTemplate" TargetType="Button">
+        <Border x:Name="Root"
+                Background="{TemplateBinding Background}"
+                BorderBrush="{TemplateBinding BorderBrush}"
+                BorderThickness="{TemplateBinding BorderThickness}"
+                CornerRadius="{TemplateBinding CornerRadius}"
+                Padding="{TemplateBinding Padding}">
+            <Border.BackgroundTransition>
+                <BrushTransition Duration="0:0:0.15"/>
+            </Border.BackgroundTransition>
+            <VisualStateManager.VisualStateGroups>
+                <VisualStateGroup x:Name="CommonStates">
+                    <VisualState x:Name="Normal"/>
+                    <VisualState x:Name="PointerOver">
+                        <VisualState.Setters>
+                            <Setter Target="Root.Background" Value="{StaticResource PawsPrimaryHoverBrush}"/>
+                        </VisualState.Setters>
+                    </VisualState>
+                    <VisualState x:Name="Pressed">
+                        <VisualState.Setters>
+                            <Setter Target="Root.Background" Value="{StaticResource PawsPrimaryPressedBrush}"/>
+                        </VisualState.Setters>
+                    </VisualState>
+                    <VisualState x:Name="Disabled">
+                        <VisualState.Setters>
+                            <Setter Target="Root.Opacity" Value="0.45"/>
+                        </VisualState.Setters>
+                    </VisualState>
+                </VisualStateGroup>
+            </VisualStateManager.VisualStateGroups>
+            <ContentPresenter Content="{TemplateBinding Content}"
+                              ContentTemplate="{TemplateBinding ContentTemplate}"
+                              Foreground="{TemplateBinding Foreground}"
+                              HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}"
+                              VerticalContentAlignment="{TemplateBinding VerticalContentAlignment}"/>
+        </Border>
+    </ControlTemplate>
+
+    <!-- SECONDARY template: white -> light gray on hover/press -->
+    <ControlTemplate x:Key="PawsSecondaryButtonTemplate" TargetType="Button">
+        <Border x:Name="Root"
+                Background="{TemplateBinding Background}"
+                BorderBrush="{TemplateBinding BorderBrush}"
+                BorderThickness="{TemplateBinding BorderThickness}"
+                CornerRadius="{TemplateBinding CornerRadius}"
+                Padding="{TemplateBinding Padding}">
+            <Border.BackgroundTransition>
+                <BrushTransition Duration="0:0:0.15"/>
+            </Border.BackgroundTransition>
+            <VisualStateManager.VisualStateGroups>
+                <VisualStateGroup x:Name="CommonStates">
+                    <VisualState x:Name="Normal"/>
+                    <VisualState x:Name="PointerOver">
+                        <VisualState.Setters>
+                            <Setter Target="Root.Background" Value="{StaticResource PawsHoverSurfaceBrush}"/>
+                        </VisualState.Setters>
+                    </VisualState>
+                    <VisualState x:Name="Pressed">
+                        <VisualState.Setters>
+                            <Setter Target="Root.Background" Value="{StaticResource PawsBorderBrush}"/>
+                        </VisualState.Setters>
+                    </VisualState>
+                    <VisualState x:Name="Disabled">
+                        <VisualState.Setters>
+                            <Setter Target="Root.Opacity" Value="0.45"/>
+                        </VisualState.Setters>
+                    </VisualState>
+                </VisualStateGroup>
+            </VisualStateManager.VisualStateGroups>
+            <ContentPresenter Content="{TemplateBinding Content}"
+                              ContentTemplate="{TemplateBinding ContentTemplate}"
+                              Foreground="{TemplateBinding Foreground}"
+                              HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}"
+                              VerticalContentAlignment="{TemplateBinding VerticalContentAlignment}"/>
+        </Border>
+    </ControlTemplate>
+
+    <!-- GHOST template: transparent -> soft coral on hover/press -->
+    <ControlTemplate x:Key="PawsGhostButtonTemplate" TargetType="Button">
+        <Border x:Name="Root"
+                Background="{TemplateBinding Background}"
+                BorderBrush="{TemplateBinding BorderBrush}"
+                BorderThickness="{TemplateBinding BorderThickness}"
+                CornerRadius="{TemplateBinding CornerRadius}"
+                Padding="{TemplateBinding Padding}">
+            <Border.BackgroundTransition>
+                <BrushTransition Duration="0:0:0.15"/>
+            </Border.BackgroundTransition>
+            <VisualStateManager.VisualStateGroups>
+                <VisualStateGroup x:Name="CommonStates">
+                    <VisualState x:Name="Normal"/>
+                    <VisualState x:Name="PointerOver">
+                        <VisualState.Setters>
+                            <Setter Target="Root.Background" Value="{StaticResource PawsPrimarySoftBrush}"/>
+                        </VisualState.Setters>
+                    </VisualState>
+                    <VisualState x:Name="Pressed">
+                        <VisualState.Setters>
+                            <Setter Target="Root.Background" Value="{StaticResource PawsPrimarySoftBrush}"/>
+                            <Setter Target="Root.Opacity" Value="0.8"/>
+                        </VisualState.Setters>
+                    </VisualState>
+                    <VisualState x:Name="Disabled">
+                        <VisualState.Setters>
+                            <Setter Target="Root.Opacity" Value="0.45"/>
+                        </VisualState.Setters>
+                    </VisualState>
+                </VisualStateGroup>
+            </VisualStateManager.VisualStateGroups>
+            <ContentPresenter Content="{TemplateBinding Content}"
+                              ContentTemplate="{TemplateBinding ContentTemplate}"
+                              Foreground="{TemplateBinding Foreground}"
+                              HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}"
+                              VerticalContentAlignment="{TemplateBinding VerticalContentAlignment}"/>
+        </Border>
+    </ControlTemplate>
+
+    <!-- ========================================================= -->
+    <!-- BUTTON STYLES                                              -->
+    <!-- ========================================================= -->
+
+    <!-- PRIMARY: coral, white text (Save, Submit, Adopt Me, Add Pet) -->
+    <Style x:Key="PawsPrimaryButton" TargetType="Button">
+        <Setter Property="Template" Value="{StaticResource PawsPrimaryButtonTemplate}"/>
+        <Setter Property="Background" Value="{StaticResource PawsPrimaryBrush}"/>
+        <Setter Property="Foreground" Value="White"/>
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="MinHeight" Value="40"/>
+        <Setter Property="Padding" Value="18,8"/>
+        <Setter Property="FontSize" Value="14"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+        <Setter Property="CornerRadius" Value="{StaticResource PawsControlRadius}"/>
+        <Setter Property="HorizontalContentAlignment" Value="Center"/>
+        <Setter Property="VerticalContentAlignment" Value="Center"/>
+    </Style>
+
+    <!-- SECONDARY: white with border (Cancel, Reset, Export) -->
+    <Style x:Key="PawsSecondaryButton" TargetType="Button">
+        <Setter Property="Template" Value="{StaticResource PawsSecondaryButtonTemplate}"/>
+        <Setter Property="Background" Value="{StaticResource PawsSurfaceBrush}"/>
+        <Setter Property="Foreground" Value="{StaticResource PawsTextPrimaryBrush}"/>
+        <Setter Property="BorderBrush" Value="{StaticResource PawsBorderBrush}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="MinHeight" Value="40"/>
+        <Setter Property="Padding" Value="18,8"/>
+        <Setter Property="FontSize" Value="14"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+        <Setter Property="CornerRadius" Value="{StaticResource PawsControlRadius}"/>
+        <Setter Property="HorizontalContentAlignment" Value="Center"/>
+        <Setter Property="VerticalContentAlignment" Value="Center"/>
+    </Style>
+
+    <!-- GHOST: transparent, coral text (low-emphasis actions, "View" links) -->
+    <Style x:Key="PawsGhostButton" TargetType="Button">
+        <Setter Property="Template" Value="{StaticResource PawsGhostButtonTemplate}"/>
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="Foreground" Value="{StaticResource PawsPrimaryBrush}"/>
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="MinHeight" Value="36"/>
+        <Setter Property="Padding" Value="14,6"/>
+        <Setter Property="FontSize" Value="14"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+        <Setter Property="CornerRadius" Value="{StaticResource PawsControlRadius}"/>
+        <Setter Property="HorizontalContentAlignment" Value="Center"/>
+        <Setter Property="VerticalContentAlignment" Value="Center"/>
+    </Style>
+
+    <!-- ICON BUTTON: small square for view/edit/delete icons (gray hover) -->
+    <Style x:Key="PawsIconButton" TargetType="Button">
+        <Setter Property="Template" Value="{StaticResource PawsSecondaryButtonTemplate}"/>
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="Foreground" Value="{StaticResource PawsTextSecondaryBrush}"/>
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="MinHeight" Value="32"/>
+        <Setter Property="MinWidth" Value="32"/>
+        <Setter Property="Padding" Value="6"/>
+        <Setter Property="CornerRadius" Value="{StaticResource PawsControlRadius}"/>
+        <Setter Property="HorizontalContentAlignment" Value="Center"/>
+        <Setter Property="VerticalContentAlignment" Value="Center"/>
+    </Style>
+
+    <!-- ========================================================= -->
+    <!-- INPUTS                                                     -->
+    <!-- ========================================================= -->
+    <Style x:Key="PawsTextBox" TargetType="TextBox">
+        <Setter Property="MinHeight" Value="40"/>
+        <Setter Property="Padding" Value="12,9"/>
+        <Setter Property="FontSize" Value="14"/>
+        <Setter Property="CornerRadius" Value="{StaticResource PawsControlRadius}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+    </Style>
+
+    <Style x:Key="PawsPasswordBox" TargetType="PasswordBox">
+        <Setter Property="MinHeight" Value="40"/>
+        <Setter Property="Padding" Value="12,9"/>
+        <Setter Property="FontSize" Value="14"/>
+        <Setter Property="CornerRadius" Value="{StaticResource PawsControlRadius}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+    </Style>
+
+    <Style x:Key="PawsComboBox" TargetType="ComboBox">
+        <Setter Property="MinHeight" Value="40"/>
+        <Setter Property="FontSize" Value="14"/>
+        <Setter Property="CornerRadius" Value="{StaticResource PawsControlRadius}"/>
+        <Setter Property="BorderBrush" Value="{StaticResource PawsBorderBrush}"/>
+        <Setter Property="Background" Value="{StaticResource PawsSurfaceBrush}"/>
+    </Style>
+
+</ResourceDictionary>

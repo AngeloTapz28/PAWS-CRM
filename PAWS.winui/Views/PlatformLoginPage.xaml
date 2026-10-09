@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Page
+    x:Class="PAWS.winui.Views.PlatformLoginPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <Grid>
+        <StackPanel
+            Spacing="16"
+            Width="360"
+            HorizontalAlignment="Center"
+            VerticalAlignment="Center">
+
+            <TextBlock
+                Text="PAWS Platform Sign-in"
+                Style="{StaticResource TitleLargeTextBlockStyle}"
+                HorizontalAlignment="Center"/>
+
+            <TextBlock
+                Text="For Super Admin accounts only. Organization staff should use the regular sign-in."
+                TextWrapping="Wrap"
+                TextAlignment="Center"
+                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                HorizontalAlignment="Center"/>
+
+            <TextBox
+                x:Name="EmailBox"
+                Header="Email"
+                PlaceholderText="you@example.com"/>
+
+            <PasswordBox
+                x:Name="PasswordInput"
+                Header="Password"
+                PlaceholderText="Password"/>
+
+            <Button
+                x:Name="LoginButton"
+                Content="Sign in"
+                HorizontalAlignment="Stretch"
+                Click="Login_Click"/>
+
+            <ProgressRing
+                x:Name="Busy"
+                IsActive="False"
+                Width="24"
+                Height="24"
+                HorizontalAlignment="Center"/>
+
+            <InfoBar
+                x:Name="ErrorBar"
+                Severity="Error"
+                IsOpen="False"
+                IsClosable="False"/>
+
+            <HyperlinkButton
+                Content="Back to organization sign-in"
+                HorizontalAlignment="Center"
+                Click="BackToLogin_Click"/>
+
+        </StackPanel>
+    </Grid>
+</Page>

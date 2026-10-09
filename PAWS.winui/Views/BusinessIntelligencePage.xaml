@@ -1,0 +1,387 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Page
+    x:Class="PAWS.winui.Views.BusinessIntelligencePage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    Loaded="Page_Loaded">
+
+    <Page.Resources>
+        <Style TargetType="TextBox" BasedOn="{StaticResource PawsTextBox}"/>
+        <Style TargetType="ComboBox" BasedOn="{StaticResource PawsComboBox}"/>
+
+        <!-- The rounded square that holds a KPI card's icon -->
+        <Style x:Key="KpiIconTile" TargetType="Border">
+            <Setter Property="Width" Value="44"/>
+            <Setter Property="Height" Value="44"/>
+            <Setter Property="CornerRadius" Value="10"/>
+            <Setter Property="HorizontalAlignment" Value="Left"/>
+        </Style>
+    </Page.Resources>
+
+    <Grid Background="{StaticResource PawsBackgroundBrush}" Padding="32,28,32,0">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- ================= HEADER ================= -->
+        <Grid Grid.Row="0" ColumnSpacing="16">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+
+            <StackPanel Grid.Column="0" Spacing="4">
+                <TextBlock Text="REPORTING" Style="{StaticResource PawsOverline}"/>
+                <TextBlock Text="Reports" Style="{StaticResource PawsPageTitle}"/>
+                <TextBlock Text="Business intelligence from your live adoption, payment and customer service data."
+                           Style="{StaticResource PawsCaption}"/>
+            </StackPanel>
+
+            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+                <ProgressRing x:Name="Busy" IsActive="False" Width="24" Height="24"/>
+                <Button Style="{StaticResource PawsSecondaryButton}" Click="Refresh_Click">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <FontIcon Glyph="&#xE72C;" FontSize="14"/>
+                        <TextBlock Text="Refresh"/>
+                    </StackPanel>
+                </Button>
+            </StackPanel>
+        </Grid>
+
+        <!-- ================= ERROR ================= -->
+        <InfoBar x:Name="ErrorBar" Grid.Row="1" Severity="Error" IsOpen="False" IsClosable="True" Margin="0,12,0,0"/>
+
+        <!-- ================= TABS ================= -->
+        <Pivot x:Name="ReportsPivot" Grid.Row="2" Margin="0,8,0,0" SelectionChanged="ReportsPivot_SelectionChanged">
+
+            <!-- ===== OVERVIEW ===== -->
+            <PivotItem Header="Overview">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel Padding="0,16,0,32" MaxWidth="1280">
+
+                        <Grid ColumnSpacing="16" RowSpacing="16">
+                            <Grid.ChildrenTransitions>
+                                <TransitionCollection>
+                                    <EntranceThemeTransition FromVerticalOffset="20" IsStaggeringEnabled="True"/>
+                                </TransitionCollection>
+                            </Grid.ChildrenTransitions>
+
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+
+                            <!-- KPI: Total income (clickable) -->
+                            <Border Grid.Row="0" Grid.Column="0" Style="{StaticResource PawsCard}" Tapped="TotalIncome_Tapped">
+                                <StackPanel Spacing="12">
+                                    <Border Style="{StaticResource KpiIconTile}" Background="{StaticResource PawsSuccessSoftBrush}">
+                                        <FontIcon Glyph="&#xE825;" FontSize="20" Foreground="{StaticResource PawsSuccessBrush}"/>
+                                    </Border>
+                                    <StackPanel Spacing="2">
+                                        <TextBlock x:Name="TotalIncomeText" Text="₱0.00" Style="{StaticResource PawsStatNumber}"/>
+                                        <TextBlock Text="TOTAL INCOME (COMPLETED PAYMENTS)" Style="{StaticResource PawsOverline}"/>
+                                    </StackPanel>
+                                    <TextBlock Text="Click to view all completed payments" Style="{StaticResource PawsCaption}"/>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- KPI: Pets cleared for adoption (clickable) -->
+                            <Border Grid.Row="0" Grid.Column="1" Style="{StaticResource PawsCard}">
+                                <StackPanel Spacing="12">
+                                    <Border Style="{StaticResource KpiIconTile}" Background="{StaticResource PawsPrimarySoftBrush}">
+                                        <FontIcon Glyph="&#xE8FB;" FontSize="20" Foreground="{StaticResource PawsPrimaryBrush}"/>
+                                    </Border>
+                                    <StackPanel Spacing="2">
+                                        <TextBlock x:Name="MedicalKpiCountText" Text="0" Style="{StaticResource PawsStatNumber}"/>
+                                        <TextBlock Text="PETS CLEARED FOR ADOPTION" Style="{StaticResource PawsOverline}"/>
+                                    </StackPanel>
+                                    <Button x:Name="MedicalKpiButton"
+                                            Style="{StaticResource PawsGhostButton}"
+                                            Padding="0,4" MinHeight="28"
+                                            HorizontalAlignment="Left"
+                                            Click="MedicalKpi_Click">
+                                        <StackPanel Orientation="Horizontal" Spacing="6">
+                                            <TextBlock Text="View fit-for-adoption records" FontSize="13"/>
+                                            <FontIcon Glyph="&#xE76C;" FontSize="11"/>
+                                        </StackPanel>
+                                    </Button>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- Income trend (full width, line chart) — right below the KPIs -->
+                            <Border Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" Style="{StaticResource PawsCard}">
+                                <StackPanel Spacing="8">
+                                    <TextBlock Text="Income Trend (Last 14 Days)" Style="{StaticResource PawsSectionTitle}"/>
+                                    <TextBlock Text="Daily total of completed payments" Style="{StaticResource PawsCaption}"/>
+                                    <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled"
+                                                  HorizontalScrollMode="Auto" VerticalScrollMode="Disabled">
+                                        <Canvas x:Name="TrendCanvas" Height="220" Margin="0,8,0,0"/>
+                                    </ScrollViewer>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- Pie (donut): approved vs rejected -->
+                            <Border Grid.Row="2" Grid.Column="0" Style="{StaticResource PawsCard}">
+                                <StackPanel Spacing="8">
+                                    <TextBlock x:Name="PieTitle" Style="{StaticResource PawsSectionTitle}"/>
+                                    <TextBlock Text="Click a slice to view that list" Style="{StaticResource PawsCaption}"/>
+                                    <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled"
+                                                  HorizontalScrollMode="Auto" VerticalScrollMode="Disabled">
+                                        <StackPanel Orientation="Horizontal" Spacing="32" Padding="0,8,0,8">
+                                            <Grid Width="220" Height="220">
+                                                <Canvas x:Name="PieCanvas" Width="220" Height="220"/>
+                                                <Grid x:Name="PieCenter" IsHitTestVisible="False"
+                                                      HorizontalAlignment="Center" VerticalAlignment="Center">
+                                                    <Ellipse Width="112" Height="112" Fill="{StaticResource PawsSurfaceBrush}"/>
+                                                    <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                                                        <TextBlock x:Name="PieCenterValue" Text="0"
+                                                                   FontSize="26" FontWeight="Bold"
+                                                                   HorizontalAlignment="Center"
+                                                                   Foreground="{StaticResource PawsTextPrimaryBrush}"/>
+                                                        <TextBlock Text="TOTAL" Style="{StaticResource PawsOverline}"
+                                                                   HorizontalAlignment="Center"/>
+                                                    </StackPanel>
+                                                </Grid>
+                                            </Grid>
+                                            <StackPanel x:Name="PieLegend" Orientation="Vertical" Spacing="8" VerticalAlignment="Center"/>
+                                        </StackPanel>
+                                    </ScrollViewer>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- Chart 1 -->
+                            <Border Grid.Row="2" Grid.Column="1" Style="{StaticResource PawsCard}">
+                                <StackPanel Spacing="8">
+                                    <TextBlock x:Name="Chart1Title" Style="{StaticResource PawsSectionTitle}"/>
+                                    <TextBlock Text="Click a bar to view that list" Style="{StaticResource PawsCaption}"/>
+                                    <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled"
+                                                  HorizontalScrollMode="Auto" VerticalScrollMode="Disabled">
+                                        <StackPanel x:Name="Chart1Container" Orientation="Horizontal" Spacing="16"
+                                                    Height="260" VerticalAlignment="Bottom" Padding="0,8,0,8"/>
+                                    </ScrollViewer>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- Chart 2 -->
+                            <Border Grid.Row="3" Grid.Column="0" Style="{StaticResource PawsCard}">
+                                <StackPanel Spacing="8">
+                                    <TextBlock x:Name="Chart2Title" Style="{StaticResource PawsSectionTitle}"/>
+                                    <TextBlock Text="Click a bar to view that list" Style="{StaticResource PawsCaption}"/>
+                                    <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled"
+                                                  HorizontalScrollMode="Auto" VerticalScrollMode="Disabled">
+                                        <StackPanel x:Name="Chart2Container" Orientation="Horizontal" Spacing="16"
+                                                    Height="260" VerticalAlignment="Bottom" Padding="0,8,0,8"/>
+                                    </ScrollViewer>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- Chart 4 -->
+                            <Border Grid.Row="3" Grid.Column="1" Style="{StaticResource PawsCard}">
+                                <StackPanel Spacing="8">
+                                    <TextBlock x:Name="Chart4Title" Style="{StaticResource PawsSectionTitle}"/>
+                                    <TextBlock Text="Click a bar to view that list" Style="{StaticResource PawsCaption}"/>
+                                    <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled"
+                                                  HorizontalScrollMode="Auto" VerticalScrollMode="Disabled">
+                                        <StackPanel x:Name="Chart4Container" Orientation="Horizontal" Spacing="16"
+                                                    Height="260" VerticalAlignment="Bottom" Padding="0,8,0,8"/>
+                                    </ScrollViewer>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- Chart 5 -->
+                            <Border Grid.Row="4" Grid.Column="0" Style="{StaticResource PawsCard}">
+                                <StackPanel Spacing="8">
+                                    <TextBlock x:Name="Chart5Title" Style="{StaticResource PawsSectionTitle}"/>
+                                    <TextBlock Text="Click a bar to view that list" Style="{StaticResource PawsCaption}"/>
+                                    <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled"
+                                                  HorizontalScrollMode="Auto" VerticalScrollMode="Disabled">
+                                        <StackPanel x:Name="Chart5Container" Orientation="Horizontal" Spacing="16"
+                                                    Height="260" VerticalAlignment="Bottom" Padding="0,8,0,8"/>
+                                    </ScrollViewer>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- Chart 6 -->
+                            <Border Grid.Row="4" Grid.Column="1" Style="{StaticResource PawsCard}">
+                                <StackPanel Spacing="8">
+                                    <TextBlock x:Name="Chart6Title" Style="{StaticResource PawsSectionTitle}"/>
+                                    <TextBlock Text="Click a bar to view that list" Style="{StaticResource PawsCaption}"/>
+                                    <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled"
+                                                  HorizontalScrollMode="Auto" VerticalScrollMode="Disabled">
+                                        <StackPanel x:Name="Chart6Container" Orientation="Horizontal" Spacing="16"
+                                                    Height="260" VerticalAlignment="Bottom" Padding="0,8,0,8"/>
+                                    </ScrollViewer>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- Row of three: payments by status + the two branch comparisons -->
+                            <Grid Grid.Row="5" Grid.Column="0" Grid.ColumnSpan="2" ColumnSpacing="16">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+
+                                <!-- Chart 7: Payments by Status -->
+                                <Border Grid.Column="0" Style="{StaticResource PawsCard}">
+                                    <StackPanel Spacing="8">
+                                        <TextBlock x:Name="Chart7Title" Style="{StaticResource PawsSectionTitle}"/>
+                                        <TextBlock Text="Click a bar to view that list" Style="{StaticResource PawsCaption}"/>
+                                        <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled"
+                                                      HorizontalScrollMode="Auto" VerticalScrollMode="Disabled">
+                                            <StackPanel x:Name="Chart7Container" Orientation="Horizontal" Spacing="16"
+                                                        Height="260" VerticalAlignment="Bottom" Padding="0,8,0,8"/>
+                                        </ScrollViewer>
+                                    </StackPanel>
+                                </Border>
+
+                                <!-- Adoptions by Branch -->
+                                <Border Grid.Column="1" Style="{StaticResource PawsCard}">
+                                    <StackPanel Spacing="8">
+                                        <TextBlock x:Name="AdoptionsByBranchTitle" Style="{StaticResource PawsSectionTitle}"/>
+                                        <TextBlock Text="Completed adoptions per branch" Style="{StaticResource PawsCaption}"/>
+                                        <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled"
+                                                      HorizontalScrollMode="Auto" VerticalScrollMode="Disabled">
+                                            <StackPanel x:Name="AdoptionsByBranchContainer" Orientation="Horizontal" Spacing="16"
+                                                        Height="260" VerticalAlignment="Bottom" Padding="0,8,0,8"/>
+                                        </ScrollViewer>
+                                    </StackPanel>
+                                </Border>
+
+                                <!-- Income by Branch -->
+                                <Border Grid.Column="2" Style="{StaticResource PawsCard}">
+                                    <StackPanel Spacing="8">
+                                        <TextBlock x:Name="IncomeByBranchTitle" Style="{StaticResource PawsSectionTitle}"/>
+                                        <TextBlock Text="Income per branch, in PHP" Style="{StaticResource PawsCaption}"/>
+                                        <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled"
+                                                      HorizontalScrollMode="Auto" VerticalScrollMode="Disabled">
+                                            <StackPanel x:Name="IncomeByBranchContainer" Orientation="Horizontal" Spacing="16"
+                                                        Height="260" VerticalAlignment="Bottom" Padding="0,8,0,8"/>
+                                        </ScrollViewer>
+                                    </StackPanel>
+                                </Border>
+                            </Grid>
+                        </Grid>
+
+                    </StackPanel>
+                </ScrollViewer>
+            </PivotItem>
+
+            <!-- ===== DETAILS ===== -->
+            <PivotItem Header="Details">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <!-- Toolbar -->
+                    <Border Grid.Row="0" Style="{StaticResource PawsCard}" Padding="16" Margin="0,16,0,0">
+                        <Grid ColumnSpacing="16">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+
+                            <ScrollViewer Grid.Column="0"
+                                          HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled"
+                                          HorizontalScrollMode="Auto" VerticalScrollMode="Disabled">
+                                <StackPanel Orientation="Horizontal" Spacing="12">
+                                    <ComboBox x:Name="ReportTypeBox" Header="Report" Width="220" SelectionChanged="ReportType_SelectionChanged">
+                                        <ComboBoxItem Content="Pet Inventory" Tag="Pets"/>
+                                        <ComboBoxItem Content="Adoption Applications" Tag="Applications"/>
+                                        <ComboBoxItem Content="Payments" Tag="Payments"/>
+                                        <ComboBoxItem Content="Customer Service" Tag="CustomerService"/>
+                                        <ComboBoxItem Content="Medical / Vaccination" Tag="Medical"/>
+                                    </ComboBox>
+                                    <ComboBox x:Name="StatusFilterBox" Header="Status" Width="180" SelectionChanged="Filter_Changed"/>
+                                    <ComboBox x:Name="TypeFilterBox" Header="Type" Width="180" SelectionChanged="Filter_Changed" Visibility="Collapsed"/>
+                                    <ComboBox x:Name="PaymentsBranchFilterBox" Header="Branch" Width="180"
+                                              SelectionChanged="Filter_Changed" DisplayMemberPath="BranchName" Visibility="Collapsed"/>
+                                    <CheckBox x:Name="FitForAdoptionOnlyBox" Content="Fit for adoption only" VerticalAlignment="Bottom"
+                                              Checked="Filter_Changed" Unchecked="Filter_Changed" Visibility="Collapsed"/>
+                                </StackPanel>
+                            </ScrollViewer>
+
+                            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Bottom">
+                                <Button x:Name="ExportPdfButton"
+                                        Style="{StaticResource PawsSecondaryButton}"
+                                        Click="ExportPdf_Click">
+                                    <StackPanel Orientation="Horizontal" Spacing="8">
+                                        <FontIcon Glyph="&#xE8A5;" FontSize="14"/>
+                                        <TextBlock Text="Export to PDF"/>
+                                    </StackPanel>
+                                </Button>
+
+                                <Button x:Name="ExportButton"
+                                        Style="{StaticResource PawsPrimaryButton}"
+                                        Click="Export_Click">
+                                    <StackPanel Orientation="Horizontal" Spacing="8">
+                                        <FontIcon Glyph="&#xE896;" FontSize="14"/>
+                                        <TextBlock Text="Export to Excel"/>
+                                    </StackPanel>
+                                </Button>
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+
+                    <InfoBar x:Name="FilterInfoBar" Grid.Row="1" Severity="Informational"
+                             IsOpen="False" IsClosable="True" Margin="0,12,0,0"/>
+
+                    <!-- Results -->
+                    <ScrollViewer Grid.Row="2" Margin="0,16,0,0" VerticalScrollBarVisibility="Auto">
+                        <Border Style="{StaticResource PawsCard}" Padding="0,0,0,8" Margin="0,0,0,32" VerticalAlignment="Top">
+                            <StackPanel>
+                                <StackPanel Padding="24,20,24,14" Spacing="2">
+                                    <TextBlock Text="Results" Style="{StaticResource PawsSectionTitle}"/>
+                                    <TextBlock x:Name="DetailsCountText" Text=" " Style="{StaticResource PawsCaption}"/>
+                                </StackPanel>
+
+                                <!-- Empty state -->
+                                <StackPanel x:Name="DetailsEmpty" Visibility="Collapsed"
+                                            Spacing="10" HorizontalAlignment="Center" Margin="0,32,0,40">
+                                    <Image Source="ms-appx:///Assets/paws-icon.png" Width="64" Height="64" Opacity="0.35"/>
+                                    <TextBlock Text="No records found" Style="{StaticResource PawsSectionTitle}" HorizontalAlignment="Center"/>
+                                    <TextBlock Text="Try a different report or change the filters."
+                                               Style="{StaticResource PawsCaption}" HorizontalAlignment="Center"/>
+                                </StackPanel>
+
+                                <ItemsControl x:Name="RowsList">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Border Padding="24,14"
+                                                    BorderBrush="{StaticResource PawsBorderBrush}"
+                                                    BorderThickness="0,1,0,0">
+                                                <StackPanel Spacing="3">
+                                                    <TextBlock Text="{Binding TitleText}"
+                                                               FontSize="14" FontWeight="SemiBold"
+                                                               Foreground="{StaticResource PawsTextPrimaryBrush}"
+                                                               TextWrapping="Wrap"/>
+                                                    <TextBlock Text="{Binding DetailText}"
+                                                               Style="{StaticResource PawsCaption}"
+                                                               TextWrapping="Wrap"/>
+                                                </StackPanel>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+                        </Border>
+                    </ScrollViewer>
+                </Grid>
+            </PivotItem>
+
+        </Pivot>
+    </Grid>
+</Page>

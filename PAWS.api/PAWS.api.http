@@ -1,0 +1,3441 @@
+@PAWS.api_HostAddress = https://localhost:7129
+
+### Health check: is the API running, and can it reach the master database?
+GET {{PAWS.api_HostAddress}}/api/health
+Accept: application/json
+
+###
+
+### Dashboard summary: OLD test, no header set. Now that auth is on, this behaves
+### the same as the "NO token" test below and should return 401.
+GET {{PAWS.api_HostAddress}}/api/dashboard/summary
+Accept: application/json
+
+###
+
+### Dashboard, NO token at all. Must return 401 (Step 15.4).
+GET {{PAWS.api_HostAddress}}/api/dashboard/summary
+Accept: application/json
+
+###
+
+### Dashboard, a garbage/invalid token. Must also return 401.
+GET {{PAWS.api_HostAddress}}/api/dashboard/summary
+Authorization: Bearer this-is-not-a-real-token
+Accept: application/json
+
+###
+
+### Error-format check: an address that does not exist should return a short 404
+GET {{PAWS.api_HostAddress}}/this-page-does-not-exist
+
+###
+
+### TEMPORARY (Step 15.3a): create one labelled TEST Adopter, so login can be tested.
+### Now returns 400 "No current company is configured" since Development:CompanyId
+### was removed in Step 15.4. That is expected; this endpoint already did its job.
+POST {{PAWS.api_HostAddress}}/debug/seed-test-adopter
+
+###
+
+### Register: a brand-new Adopter account.
+POST {{PAWS.api_HostAddress}}/api/auth/register
+Content-Type: application/json
+
+{
+  "companyCode": "PAWS-A",
+  "fullName": "New Test Adopter",
+  "email": "new.adopter@example.com",
+  "phone": "09171234567",
+  "password": "Register-Test-123!",
+  "confirmPassword": "Register-Test-123!"
+}
+
+###
+
+### Register: same email again. Must return the SAME generic message as the unknown company code below.
+POST {{PAWS.api_HostAddress}}/api/auth/register
+Content-Type: application/json
+
+{
+  "companyCode": "PAWS-A",
+  "fullName": "Another Person",
+  "email": "new.adopter@example.com",
+  "password": "Different-Password-1!",
+  "confirmPassword": "Different-Password-1!"
+}
+
+###
+
+### Register: unknown company code. Must return the exact same generic message as above.
+POST {{PAWS.api_HostAddress}}/api/auth/register
+Content-Type: application/json
+
+{
+  "companyCode": "NOT-A-REAL-CODE",
+  "fullName": "Someone Else",
+  "email": "someone.else@example.com",
+  "password": "Whatever-Password-1!",
+  "confirmPassword": "Whatever-Password-1!"
+}
+
+###
+
+### Register: passwords that do not match. This is a DIFFERENT, specific 400 error.
+POST {{PAWS.api_HostAddress}}/api/auth/register
+Content-Type: application/json
+
+{
+  "companyCode": "PAWS-A",
+  "fullName": "Mismatch Person",
+  "email": "mismatch.person@example.com",
+  "password": "First-Password-123!",
+  "confirmPassword": "Second-Password-456!"
+}
+
+###
+
+### Log in with the account just registered, to prove it really works.
+POST {{PAWS.api_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "companyCode": "PAWS-A",
+  "email": "new.adopter@example.com",
+  "password": "Register-Test-123!"
+}
+
+###
+
+### Login: correct company code, email and password.
+### STEP 1: Send this request. Copy the "token" value from its response
+### (everything between the quotes, starting with "eyJ").
+POST {{PAWS.api_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "companyCode": "PAWS-A",
+  "email": "test.adopter@example.com",
+  "password": "Test-Password-123!"
+}
+
+###
+
+### Dashboard, using a REAL token. Must return 200.
+### STEP 2: Paste the token you just copied right after "Bearer " below,
+### replacing the text PASTE_YOUR_TOKEN_HERE. Keep it all on one line.
+GET {{PAWS.api_HostAddress}}/api/dashboard/summary
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTAwNDUwNjUsImlhdCI6MTc5MDA0MTQ2NSwibmJmIjoxNzkwMDQxNDY1LCJzdWIiOiIxIiwibmFtZSI6IlRFU1QgQWRvcHRlciIsImVtYWlsIjoidGVzdC5hZG9wdGVyQGV4YW1wbGUuY29tIiwianRpIjoiZWEwYTNlZTQtODUwYS00YjIzLWEyNTUtMjdlOTJmNjMyN2U1Iiwicm9sZSI6IkFkb3B0ZXIiLCJjb21wYW55SWQiOiIxIn0.M19PMwC_83PQUsysZBRAUJ9SpFo0k49xTv11krXQ76Y 
+Accept: application/json
+
+###
+
+### Login: WRONG password. Must return the exact same message as the other failures below.
+POST {{PAWS.api_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "companyCode": "PAWS-A",
+  "email": "test.adopter@example.com",
+  "password": "Not-The-Right-Password!"
+}
+
+###
+
+### Login: unknown email. Must return the exact same message.
+POST {{PAWS.api_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "companyCode": "PAWS-A",
+  "email": "nobody@example.com",
+  "password": "Test-Password-123!"
+}
+
+###
+
+### Login: unknown company code. Must return the exact same message.
+POST {{PAWS.api_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "companyCode": "NOT-A-REAL-CODE",
+  "email": "test.adopter@example.com",
+  "password": "Test-Password-123!"
+}
+
+###
+
+### Login: a required field left empty. This is DIFFERENT from the others (400, not 401).
+POST {{PAWS.api_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "companyCode": "",
+  "email": "test.adopter@example.com",
+  "password": "Test-Password-123!"
+}
+
+###
+
+### Bootstrap: wrong setup key. Must fail before touching any company or database.
+POST {{PAWS.api_HostAddress}}/api/auth/bootstrap-admin
+Content-Type: application/json
+
+{
+  "companyCode": "PAWS-B",
+  "fullName": "First Admin",
+  "email": "admin@pawsb.example.com",
+  "password": "Bootstrap-Test-123!",
+  "confirmPassword": "Bootstrap-Test-123!",
+  "setupKey": "this-is-the-wrong-key"
+}
+
+###
+
+### Bootstrap: refused because Tenant A already has users. Replace <YOUR_REAL_SETUP_KEY>
+### with the exact value in your User Secrets (Manage User Secrets), not pasted here.
+POST {{PAWS.api_HostAddress}}/api/auth/bootstrap-admin
+Content-Type: application/json
+
+{
+  "companyCode": "PAWS-A",
+  "fullName": "Second Admin Attempt",
+  "email": "another.admin@example.com",
+  "password": "Bootstrap-Test-123!",
+  "confirmPassword": "Bootstrap-Test-123!",
+  "setupKey": "3LA4gOo2DESfqqCCE+EAMdzWBnJLZEyE"
+}
+
+###
+
+### Bootstrap: correct key. PAWS-B already has an admin from earlier testing, so
+### this is expected to be REFUSED with the same generic message, not a 200.
+POST {{PAWS.api_HostAddress}}/api/auth/bootstrap-admin
+Content-Type: application/json
+
+{
+  "companyCode": "PAWS-B",
+  "fullName": "First Admin",
+  "email": "admin@pawsb.example.com",
+  "password": "Bootstrap-Test-123!",
+  "confirmPassword": "Bootstrap-Test-123!",
+  "setupKey": "3LA4gOo2DESfqqCCE+EAMdzWBnJLZEyE"
+}
+
+###
+
+### Bootstrap again on Tenant B with the SAME correct key. Also refused, same reason.
+POST {{PAWS.api_HostAddress}}/api/auth/bootstrap-admin
+Content-Type: application/json
+
+{
+  "companyCode": "PAWS-B",
+  "fullName": "Second Admin Attempt",
+  "email": "second.admin@pawsb.example.com",
+  "password": "Bootstrap-Test-123!",
+  "confirmPassword": "Bootstrap-Test-123!",
+  "setupKey": "3LA4gOo2DESfqqCCE+EAMdzWBnJLZEyE"
+}
+
+###
+
+### Log in as the Tenant B administrator, to prove the account still works.
+POST {{PAWS.api_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "companyCode": "PAWS-B",
+  "email": "admin@pawsb.example.com",
+  "password": "Bootstrap-Test-123!"
+}
+
+###
+
+### Bootstrap: wrong setup key for Super Admin. Must fail before creating anything.
+POST {{PAWS.api_HostAddress}}/api/auth/bootstrap-superadmin
+Content-Type: application/json
+
+{
+  "email": "superadmin@paws.example.com",
+  "password": "SuperAdmin-Test-123!",
+  "confirmPassword": "SuperAdmin-Test-123!",
+  "setupKey": "this-is-the-wrong-key"
+}
+
+###
+
+### Bootstrap: correct key. Should SUCCEED (assuming no Super Admin exists yet).
+### Replace <YOUR_REAL_SUPERADMIN_SETUP_KEY> from Manage User Secrets, not pasted here.
+POST {{PAWS.api_HostAddress}}/api/auth/bootstrap-superadmin
+Content-Type: application/json
+
+{
+  "email": "superadmin@paws.example.com",
+  "password": "SuperAdmin-Test-123!",
+  "confirmPassword": "SuperAdmin-Test-123!",
+  "setupKey": "KF4kceKmUBBA5CqLcT1FbkexdY7hV21p"
+}
+
+###
+
+### Bootstrap again with the SAME correct key. Should now be refused,
+### because a Super Admin already exists.
+POST {{PAWS.api_HostAddress}}/api/auth/bootstrap-superadmin
+Content-Type: application/json
+
+{
+  "email": "second.superadmin@paws.example.com",
+  "password": "SuperAdmin-Test-123!",
+  "confirmPassword": "SuperAdmin-Test-123!",
+  "setupKey": "KF4kceKmUBBA5CqLcT1FbkexdY7hV21p"
+}
+
+###
+
+### Platform login: correct email and password. Should SUCCEED, with role "Super Admin"
+### and NO companyId in the response.
+# @name platformLogin
+POST {{PAWS.api_HostAddress}}/api/auth/platform-login
+Content-Type: application/json
+
+{
+  "email": "superadmin@paws.example.com",
+  "password": "SuperAdmin-Test-123!"
+}
+
+###
+
+### Platform login: WRONG password. Must return the same generic message as below.
+POST {{PAWS.api_HostAddress}}/api/auth/platform-login
+Content-Type: application/json
+
+{
+  "email": "superadmin@paws.example.com",
+  "password": "Not-The-Right-Password!"
+}
+
+###
+
+### Platform login: unknown email. Must return the exact same generic message.
+POST {{PAWS.api_HostAddress}}/api/auth/platform-login
+Content-Type: application/json
+
+{
+  "email": "nobody@paws.example.com",
+  "password": "SuperAdmin-Test-123!"
+}
+
+###
+
+### Cross-check: a Super Admin token must NOT be accepted as a valid company
+### session. Uses the platform login token above against the tenant dashboard.
+### Expected: 401, since this token has no companyId claim.
+GET {{PAWS.api_HostAddress}}/api/dashboard/summary
+Authorization: Bearer {{platformLogin.response.body.$.token}}
+Accept: application/json
+
+###
+POST {{PAWS.api_HostAddress}}/api/auth/bootstrap-superadmin
+Content-Type: application/json
+
+{
+  "email": "yet.another.superadmin@paws.example.com",
+  "password": "SuperAdmin-Test-123!",
+  "confirmPassword": "SuperAdmin-Test-123!",
+  "setupKey": "KF4kceKmUBBA5CqLcT1FbkexdY7hV21p"
+}
+###
+
+### ===== Step 16.1 =====
+### Get a fresh Administrator token (PAWS-B).
+POST {{PAWS.api_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "companyCode": "PAWS-B",
+  "email": "admin@pawsb.example.com",
+  "password": "Bootstrap-Test-123!"
+}
+
+###
+### List categories (should be empty at first — []).
+GET {{PAWS.api_HostAddress}}/api/pet-categories
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTAwOTc5MTEsImlhdCI6MTc5MDA5NDMxMSwibmJmIjoxNzkwMDk0MzExLCJzdWIiOiIxIiwibmFtZSI6IkZpcnN0IEFkbWluIiwiZW1haWwiOiJhZG1pbkBwYXdzYi5leGFtcGxlLmNvbSIsImp0aSI6ImY2NDUyZTYwLTAwNWUtNDEyNi05ZjVmLWFhOTA3ODJkZTA1YSIsInJvbGUiOiJBZG1pbmlzdHJhdG9yIiwiY29tcGFueUlkIjoiMiJ9.zf-pnKrb33NcaW9nJGCDuxZedhfjON14ABDY1JfkPO8
+
+###
+### Create "Dog".
+POST {{PAWS.api_HostAddress}}/api/pet-categories
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTAwOTc5MTEsImlhdCI6MTc5MDA5NDMxMSwibmJmIjoxNzkwMDk0MzExLCJzdWIiOiIxIiwibmFtZSI6IkZpcnN0IEFkbWluIiwiZW1haWwiOiJhZG1pbkBwYXdzYi5leGFtcGxlLmNvbSIsImp0aSI6ImY2NDUyZTYwLTAwNWUtNDEyNi05ZjVmLWFhOTA3ODJkZTA1YSIsInJvbGUiOiJBZG1pbmlzdHJhdG9yIiwiY29tcGFueUlkIjoiMiJ9.zf-pnKrb33NcaW9nJGCDuxZedhfjON14ABDY1JfkPO8
+Content-Type: application/json
+
+{
+  "categoryName": "Dog",
+  "description": "Domestic dogs of all breeds and sizes."
+}
+
+###
+### Create "Cat".
+POST {{PAWS.api_HostAddress}}/api/pet-categories
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTAwOTc5MTEsImlhdCI6MTc5MDA5NDMxMSwibmJmIjoxNzkwMDk0MzExLCJzdWIiOiIxIiwibmFtZSI6IkZpcnN0IEFkbWluIiwiZW1haWwiOiJhZG1pbkBwYXdzYi5leGFtcGxlLmNvbSIsImp0aSI6ImY2NDUyZTYwLTAwNWUtNDEyNi05ZjVmLWFhOTA3ODJkZTA1YSIsInJvbGUiOiJBZG1pbmlzdHJhdG9yIiwiY29tcGFueUlkIjoiMiJ9.zf-pnKrb33NcaW9nJGCDuxZedhfjON14ABDY1JfkPO8
+Content-Type: application/json
+
+{
+  "categoryName": "Cat",
+  "description": "Domestic cats."
+}
+
+###
+### Try to create "Dog" again. Must be REFUSED (duplicate name).
+POST {{PAWS.api_HostAddress}}/api/pet-categories
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTAwOTc5MTEsImlhdCI6MTc5MDA5NDMxMSwibmJmIjoxNzkwMDk0MzExLCJzdWIiOiIxIiwibmFtZSI6IkZpcnN0IEFkbWluIiwiZW1haWwiOiJhZG1pbkBwYXdzYi5leGFtcGxlLmNvbSIsImp0aSI6ImY2NDUyZTYwLTAwNWUtNDEyNi05ZjVmLWFhOTA3ODJkZTA1YSIsInJvbGUiOiJBZG1pbmlzdHJhdG9yIiwiY29tcGFueUlkIjoiMiJ9.zf-pnKrb33NcaW9nJGCDuxZedhfjON14ABDY1JfkPO8
+Content-Type: application/json
+
+{
+  "categoryName": "Dog",
+  "description": "A duplicate attempt."
+}
+
+###
+### List categories again. Should show Dog and Cat.
+GET {{PAWS.api_HostAddress}}/api/pet-categories
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTAwOTc5MTEsImlhdCI6MTc5MDA5NDMxMSwibmJmIjoxNzkwMDk0MzExLCJzdWIiOiIxIiwibmFtZSI6IkZpcnN0IEFkbWluIiwiZW1haWwiOiJhZG1pbkBwYXdzYi5leGFtcGxlLmNvbSIsImp0aSI6ImY2NDUyZTYwLTAwNWUtNDEyNi05ZjVmLWFhOTA3ODJkZTA1YSIsInJvbGUiOiJBZG1pbmlzdHJhdG9yIiwiY29tcGFueUlkIjoiMiJ9.zf-pnKrb33NcaW9nJGCDuxZedhfjON14ABDY1JfkPO8
+
+###
+### Deactivate "Cat".
+POST {{PAWS.api_HostAddress}}/api/pet-categories/2/deactivate
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTAwOTc5MTEsImlhdCI6MTc5MDA5NDMxMSwibmJmIjoxNzkwMDk0MzExLCJzdWIiOiIxIiwibmFtZSI6IkZpcnN0IEFkbWluIiwiZW1haWwiOiJhZG1pbkBwYXdzYi5leGFtcGxlLmNvbSIsImp0aSI6ImY2NDUyZTYwLTAwNWUtNDEyNi05ZjVmLWFhOTA3ODJkZTA1YSIsInJvbGUiOiJBZG1pbmlzdHJhdG9yIiwiY29tcGFueUlkIjoiMiJ9.zf-pnKrb33NcaW9nJGCDuxZedhfjON14ABDY1JfkPO8
+
+###
+### List categories again (default). "Cat" should now be MISSING (hidden because inactive).
+GET {{PAWS.api_HostAddress}}/api/pet-categories
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTAwOTc5MTEsImlhdCI6MTc5MDA5NDMxMSwibmJmIjoxNzkwMDk0MzExLCJzdWIiOiIxIiwibmFtZSI6IkZpcnN0IEFkbWluIiwiZW1haWwiOiJhZG1pbkBwYXdzYi5leGFtcGxlLmNvbSIsImp0aSI6ImY2NDUyZTYwLTAwNWUtNDEyNi05ZjVmLWFhOTA3ODJkZTA1YSIsInJvbGUiOiJBZG1pbmlzdHJhdG9yIiwiY29tcGFueUlkIjoiMiJ9.zf-pnKrb33NcaW9nJGCDuxZedhfjON14ABDY1JfkPO8
+
+###
+### List WITH includeInactive=true. "Cat" should reappear, marked isActive: false.
+GET {{PAWS.api_HostAddress}}/api/pet-categories?includeInactive=true
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTAwOTc5MTEsImlhdCI6MTc5MDA5NDMxMSwibmJmIjoxNzkwMDk0MzExLCJzdWIiOiIxIiwibmFtZSI6IkZpcnN0IEFkbWluIiwiZW1haWwiOiJhZG1pbkBwYXdzYi5leGFtcGxlLmNvbSIsImp0aSI6ImY2NDUyZTYwLTAwNWUtNDEyNi05ZjVmLWFhOTA3ODJkZTA1YSIsInJvbGUiOiJBZG1pbmlzdHJhdG9yIiwiY29tcGFueUlkIjoiMiJ9.zf-pnKrb33NcaW9nJGCDuxZedhfjON14ABDY1JfkPO8
+
+###
+### Adopter login.
+POST {{PAWS.api_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "companyCode": "PAWS-A",
+  "email": "test.adopter@example.com",
+  "password": "Test-Password-123!"
+}
+
+###
+### Adopter tries includeInactive=true. Must be REFUSED (403).
+GET {{PAWS.api_HostAddress}}/api/pet-categories?includeInactive=true
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTAwOTg3NDUsImlhdCI6MTc5MDA5NTE0NSwibmJmIjoxNzkwMDk1MTQ1LCJzdWIiOiIxIiwibmFtZSI6IlRFU1QgQWRvcHRlciIsImVtYWlsIjoidGVzdC5hZG9wdGVyQGV4YW1wbGUuY29tIiwianRpIjoiZGNjMWQ1NTctOWYxNS00M2EyLWI4ZDktNTJlZDZlNGRkZjJmIiwicm9sZSI6IkFkb3B0ZXIiLCJjb21wYW55SWQiOiIxIn0.jACv_J6V2vbMc4s7M0W4K_4kLQXb-Yy6N96_03488OY
+
+###
+### The SAME Adopter token on a plain GET. Expect 200 — reading is open to everyone.
+GET {{PAWS.api_HostAddress}}/api/pet-categories
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTAwOTg1MjgsImlhdCI6MTc5MDA5NDkyOCwibmJmIjoxNzkwMDk0OTI4LCJzdWIiOiIxIiwibmFtZSI6IlRFU1QgQWRvcHRlciIsImVtYWlsIjoidGVzdC5hZG9wdGVyQGV4YW1wbGUuY29tIiwianRpIjoiZTJiZmQzYWYtODJmOC00MWVmLThmNDYtMGQ0NDJmYjUxYzljIiwicm9sZSI6IkFkb3B0ZXIiLCJjb21wYW55SWQiOiIxIn0.ge-pjfWnB8VyzQ4IpoGhQ-SwZvLI_v3Exr8dp6z8AuA
+
+###
+### Veterinarian (non-management role) login, same company as Dog/Cat (PAWS-B).
+POST {{PAWS.api_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "companyCode": "PAWS-B",
+  "email": "AngeloManingo123@paws.com",
+  "password": "Angelo2801@"
+}
+
+###
+### Veterinarian tries a plain GET on PAWS-B. Expect 200, showing "Dog" (Cat stays hidden, inactive).
+GET {{PAWS.api_HostAddress}}/api/pet-categories
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTAwOTg2ODUsImlhdCI6MTc5MDA5NTA4NSwibmJmIjoxNzkwMDk1MDg1LCJzdWIiOiI1IiwibmFtZSI6IkFuZ2VsbyBNYW5pbmdvIiwiZW1haWwiOiJBbmdlbG9NYW5pbmdvMTIzQHBhd3MuY29tIiwianRpIjoiMzZkZGQ5ZGUtNDIzOC00N2QxLTg3OWItZTY5MGNiNWFjMzJiIiwicm9sZSI6IlZldGVyaW5hcmlhbiIsImNvbXBhbnlJZCI6IjIifQ.XqEEFcfJIAqTsQDqP9EHt6WKMNMuyTE6AZPSQoOulK0
+
+###
+### An Adopter tries to CREATE a category. Must be REFUSED (403).
+POST {{PAWS.api_HostAddress}}/api/pet-categories
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTAwOTg3NDUsImlhdCI6MTc5MDA5NTE0NSwibmJmIjoxNzkwMDk1MTQ1LCJzdWIiOiIxIiwibmFtZSI6IlRFU1QgQWRvcHRlciIsImVtYWlsIjoidGVzdC5hZG9wdGVyQGV4YW1wbGUuY29tIiwianRpIjoiZGNjMWQ1NTctOWYxNS00M2EyLWI4ZDktNTJlZDZlNGRkZjJmIiwicm9sZSI6IkFkb3B0ZXIiLCJjb21wYW55SWQiOiIxIn0.jACv_J6V2vbMc4s7M0W4K_4kLQXb-Yy6N96_03488OY
+Content-Type: application/json
+
+{
+  "categoryName": "Should Not Work",
+  "description": "Adopters cannot create categories."
+}
+
+###
+### Reactivate "Cat" so it's available for later testing (Breeds, Pets).
+POST {{PAWS.api_HostAddress}}/api/pet-categories/2/activate
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTAwOTg4MTMsImlhdCI6MTc5MDA5NTIxMywibmJmIjoxNzkwMDk1MjEzLCJzdWIiOiIxIiwibmFtZSI6IkZpcnN0IEFkbWluIiwiZW1haWwiOiJhZG1pbkBwYXdzYi5leGFtcGxlLmNvbSIsImp0aSI6ImU1NWNkYjY0LWVmYmEtNDg4Yi04NTNhLWU0MmYzOTRlNDM2ZSIsInJvbGUiOiJBZG1pbmlzdHJhdG9yIiwiY29tcGFueUlkIjoiMiJ9.pOOahPnU7eIX6FU9GCRZccrsmrq7nUA2KLiCMLxnMr0
+
+### ===== Step 16.2: Breeds =====
+### List breeds (should be empty at first — []).
+GET {{PAWS.api_HostAddress}}/api/breeds
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTAwOTg5NDQsImlhdCI6MTc5MDA5NTM0NCwibmJmIjoxNzkwMDk1MzQ0LCJzdWIiOiIxIiwibmFtZSI6IkZpcnN0IEFkbWluIiwiZW1haWwiOiJhZG1pbkBwYXdzYi5leGFtcGxlLmNvbSIsImp0aSI6IjBjZGZhZjVjLTcyNmQtNDM5ZS05NTc0LTFjZDZiNDliNDIwNSIsInJvbGUiOiJBZG1pbmlzdHJhdG9yIiwiY29tcGFueUlkIjoiMiJ9.n6bNA5ZOppDQxVMg_YaL5eBY7gm0phbSB4VnZ2KSQCA
+
+###
+### Create "Labrador" under Dog.
+POST {{PAWS.api_HostAddress}}/api/breeds
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTAwOTg5NDQsImlhdCI6MTc5MDA5NTM0NCwibmJmIjoxNzkwMDk1MzQ0LCJzdWIiOiIxIiwibmFtZSI6IkZpcnN0IEFkbWluIiwiZW1haWwiOiJhZG1pbkBwYXdzYi5leGFtcGxlLmNvbSIsImp0aSI6IjBjZGZhZjVjLTcyNmQtNDM5ZS05NTc0LTFjZDZiNDliNDIwNSIsInJvbGUiOiJBZG1pbmlzdHJhdG9yIiwiY29tcGFueUlkIjoiMiJ9.n6bNA5ZOppDQxVMg_YaL5eBY7gm0phbSB4VnZ2KSQCA
+Content-Type: application/json
+
+{
+  "petCategoryId": 1,
+  "breedName": "Labrador",
+  "description": "Friendly, energetic, and highly trainable."
+}
+
+###
+### Create "Persian" under Cat.
+POST {{PAWS.api_HostAddress}}/api/breeds
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTAwOTg5NDQsImlhdCI6MTc5MDA5NTM0NCwibmJmIjoxNzkwMDk1MzQ0LCJzdWIiOiIxIiwibmFtZSI6IkZpcnN0IEFkbWluIiwiZW1haWwiOiJhZG1pbkBwYXdzYi5leGFtcGxlLmNvbSIsImp0aSI6IjBjZGZhZjVjLTcyNmQtNDM5ZS05NTc0LTFjZDZiNDliNDIwNSIsInJvbGUiOiJBZG1pbmlzdHJhdG9yIiwiY29tcGFueUlkIjoiMiJ9.n6bNA5ZOppDQxVMg_YaL5eBY7gm0phbSB4VnZ2KSQCA
+Content-Type: application/json
+
+{
+  "petCategoryId": 2,
+  "breedName": "Persian",
+  "description": "Long-haired, calm and affectionate."
+}
+
+###
+### Try to create "Labrador" again under Dog. Must be REFUSED (duplicate within same category).
+POST {{PAWS.api_HostAddress}}/api/breeds
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTAwOTg5NDQsImlhdCI6MTc5MDA5NTM0NCwibmJmIjoxNzkwMDk1MzQ0LCJzdWIiOiIxIiwibmFtZSI6IkZpcnN0IEFkbWluIiwiZW1haWwiOiJhZG1pbkBwYXdzYi5leGFtcGxlLmNvbSIsImp0aSI6IjBjZGZhZjVjLTcyNmQtNDM5ZS05NTc0LTFjZDZiNDliNDIwNSIsInJvbGUiOiJBZG1pbmlzdHJhdG9yIiwiY29tcGFueUlkIjoiMiJ9.n6bNA5ZOppDQxVMg_YaL5eBY7gm0phbSB4VnZ2KSQCA
+Content-Type: application/json
+
+{
+  "petCategoryId": 1,
+  "breedName": "Labrador",
+  "description": "A duplicate attempt."
+}
+
+###
+### List breeds filtered to Dog only (categoryId=1). Should show ONLY Labrador.
+GET {{PAWS.api_HostAddress}}/api/breeds?categoryId=1
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTAwOTg5NDQsImlhdCI6MTc5MDA5NTM0NCwibmJmIjoxNzkwMDk1MzQ0LCJzdWIiOiIxIiwibmFtZSI6IkZpcnN0IEFkbWluIiwiZW1haWwiOiJhZG1pbkBwYXdzYi5leGFtcGxlLmNvbSIsImp0aSI6IjBjZGZhZjVjLTcyNmQtNDM5ZS05NTc0LTFjZDZiNDliNDIwNSIsInJvbGUiOiJBZG1pbmlzdHJhdG9yIiwiY29tcGFueUlkIjoiMiJ9.n6bNA5ZOppDQxVMg_YaL5eBY7gm0phbSB4VnZ2KSQCA
+
+###
+### Deactivate "Persian" (breedId 2).
+POST {{PAWS.api_HostAddress}}/api/breeds/2/deactivate
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTAwOTg5NDQsImlhdCI6MTc5MDA5NTM0NCwibmJmIjoxNzkwMDk1MzQ0LCJzdWIiOiIxIiwibmFtZSI6IkZpcnN0IEFkbWluIiwiZW1haWwiOiJhZG1pbkBwYXdzYi5leGFtcGxlLmNvbSIsImp0aSI6IjBjZGZhZjVjLTcyNmQtNDM5ZS05NTc0LTFjZDZiNDliNDIwNSIsInJvbGUiOiJBZG1pbmlzdHJhdG9yIiwiY29tcGFueUlkIjoiMiJ9.n6bNA5ZOppDQxVMg_YaL5eBY7gm0phbSB4VnZ2KSQCA
+
+###
+### List all breeds (default). "Persian" should be MISSING (inactive, hidden).
+GET {{PAWS.api_HostAddress}}/api/breeds
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTAwOTg5NDQsImlhdCI6MTc5MDA5NTM0NCwibmJmIjoxNzkwMDk1MzQ0LCJzdWIiOiIxIiwibmFtZSI6IkZpcnN0IEFkbWluIiwiZW1haWwiOiJhZG1pbkBwYXdzYi5leGFtcGxlLmNvbSIsImp0aSI6IjBjZGZhZjVjLTcyNmQtNDM5ZS05NTc0LTFjZDZiNDliNDIwNSIsInJvbGUiOiJBZG1pbmlzdHJhdG9yIiwiY29tcGFueUlkIjoiMiJ9.n6bNA5ZOppDQxVMg_YaL5eBY7gm0phbSB4VnZ2KSQCA
+
+###
+### List WITH includeInactive=true. "Persian" should reappear, marked isActive: false.
+GET {{PAWS.api_HostAddress}}/api/breeds?includeInactive=true
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTAwOTg5NDQsImlhdCI6MTc5MDA5NTM0NCwibmJmIjoxNzkwMDk1MzQ0LCJzdWIiOiIxIiwibmFtZSI6IkZpcnN0IEFkbWluIiwiZW1haWwiOiJhZG1pbkBwYXdzYi5leGFtcGxlLmNvbSIsImp0aSI6IjBjZGZhZjVjLTcyNmQtNDM5ZS05NTc0LTFjZDZiNDliNDIwNSIsInJvbGUiOiJBZG1pbmlzdHJhdG9yIiwiY29tcGFueUlkIjoiMiJ9.n6bNA5ZOppDQxVMg_YaL5eBY7gm0phbSB4VnZ2KSQCA
+
+###
+
+### Adopter login (fresh token).
+POST {{PAWS.api_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "companyCode": "PAWS-A",
+  "email": "test.adopter@example.com",
+  "password": "Test-Password-123!"
+}
+
+###
+
+### Adopter tries includeInactive=true on breeds. Must be REFUSED (403).
+GET {{PAWS.api_HostAddress}}/api/breeds?includeInactive=true
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTAwOTkyMjQsImlhdCI6MTc5MDA5NTYyNCwibmJmIjoxNzkwMDk1NjI0LCJzdWIiOiIxIiwibmFtZSI6IlRFU1QgQWRvcHRlciIsImVtYWlsIjoidGVzdC5hZG9wdGVyQGV4YW1wbGUuY29tIiwianRpIjoiZmQ5ZjY2ODktNTc4Ny00MmE5LThkNWQtNDkxNzY2MTVjYzQxIiwicm9sZSI6IkFkb3B0ZXIiLCJjb21wYW55SWQiOiIxIn0.mNSSxI8kXf8xwwuJGIV4GxvqUJth7ZVy88txVeXus70
+
+###
+
+### Adopter tries to CREATE a breed. Must be REFUSED (403).
+POST {{PAWS.api_HostAddress}}/api/breeds
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTAwOTkyMjQsImlhdCI6MTc5MDA5NTYyNCwibmJmIjoxNzkwMDk1NjI0LCJzdWIiOiIxIiwibmFtZSI6IlRFU1QgQWRvcHRlciIsImVtYWlsIjoidGVzdC5hZG9wdGVyQGV4YW1wbGUuY29tIiwianRpIjoiZmQ5ZjY2ODktNTc4Ny00MmE5LThkNWQtNDkxNzY2MTVjYzQxIiwicm9sZSI6IkFkb3B0ZXIiLCJjb21wYW55SWQiOiIxIn0.mNSSxI8kXf8xwwuJGIV4GxvqUJth7ZVy88txVeXus70
+Content-Type: application/json
+
+{
+  "petCategoryId": 1,
+  "breedName": "Should Not Work",
+  "description": "Adopters cannot create breeds."
+}
+
+###
+### Reactivate "Persian" for later testing (Pets).
+POST {{PAWS.api_HostAddress}}/api/breeds/2/activate
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTAwOTkzMTAsImlhdCI6MTc5MDA5NTcxMCwibmJmIjoxNzkwMDk1NzEwLCJzdWIiOiIxIiwibmFtZSI6IkZpcnN0IEFkbWluIiwiZW1haWwiOiJhZG1pbkBwYXdzYi5leGFtcGxlLmNvbSIsImp0aSI6Ijc2MTgwYzEyLTUwMTMtNDc2NC1iZGFjLTY5MjE0Nzg3ZjU1NiIsInJvbGUiOiJBZG1pbmlzdHJhdG9yIiwiY29tcGFueUlkIjoiMiJ9.tCdQam0WCpaZfRINEE6-oQiaDkUg3WMgeH6BouFdyZk
+
+
+### ===== Step 16.3: Pets =====
+### Fresh Administrator login (PAWS-B).
+POST {{PAWS.api_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "companyCode": "PAWS-B",
+  "email": "admin@pawsb.example.com",
+  "password": "Bootstrap-Test-123!"
+}
+
+###
+### List pets (should be empty at first — []).
+GET {{PAWS.api_HostAddress}}/api/pets
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTAxMDExMzMsImlhdCI6MTc5MDA5NzUzMywibmJmIjoxNzkwMDk3NTMzLCJzdWIiOiIxIiwibmFtZSI6IkZpcnN0IEFkbWluIiwiZW1haWwiOiJhZG1pbkBwYXdzYi5leGFtcGxlLmNvbSIsImp0aSI6ImQ5MjEzMGExLWJlMmUtNGZjMC1iYThkLWFkNTk4ZDA4OTE2NSIsInJvbGUiOiJBZG1pbmlzdHJhdG9yIiwiY29tcGFueUlkIjoiMiJ9.ZyqjFDj5Lo62xYYo_sZkAklNRrif3WdlPdJ-lFpa-yg
+
+###
+### Create "Buddy", a Labrador.
+POST {{PAWS.api_HostAddress}}/api/pets
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTAxMDExMzMsImlhdCI6MTc5MDA5NzUzMywibmJmIjoxNzkwMDk3NTMzLCJzdWIiOiIxIiwibmFtZSI6IkZpcnN0IEFkbWluIiwiZW1haWwiOiJhZG1pbkBwYXdzYi5leGFtcGxlLmNvbSIsImp0aSI6ImQ5MjEzMGExLWJlMmUtNGZjMC1iYThkLWFkNTk4ZDA4OTE2NSIsInJvbGUiOiJBZG1pbmlzdHJhdG9yIiwiY29tcGFueUlkIjoiMiJ9.ZyqjFDj5Lo62xYYo_sZkAklNRrif3WdlPdJ-lFpa-yg
+Content-Type: application/json
+
+{
+  "petCategoryId": 1,
+  "breedId": 1,
+  "petName": "Buddy",
+  "gender": "Male",
+  "age": 2,
+  "size": "Medium",
+  "color": "Golden",
+  "description": "Friendly and energetic, loves fetch.",
+  "imagePath": "https://example.com/images/buddy.jpg",
+  "adoptionFee": 500,
+  "adoptionFeeType": "Fixed"
+}
+
+###
+### List pets again. Should show Buddy: Pending, both approvals false.
+GET {{PAWS.api_HostAddress}}/api/pets
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTAxMDExMzMsImlhdCI6MTc5MDA5NzUzMywibmJmIjoxNzkwMDk3NTMzLCJzdWIiOiIxIiwibmFtZSI6IkZpcnN0IEFkbWluIiwiZW1haWwiOiJhZG1pbkBwYXdzYi5leGFtcGxlLmNvbSIsImp0aSI6ImQ5MjEzMGExLWJlMmUtNGZjMC1iYThkLWFkNTk4ZDA4OTE2NSIsInJvbGUiOiJBZG1pbmlzdHJhdG9yIiwiY29tcGFueUlkIjoiMiJ9.ZyqjFDj5Lo62xYYo_sZkAklNRrif3WdlPdJ-lFpa-yg
+
+###
+### Try admin-approve BEFORE vet approval. Must be REFUSED.
+POST {{PAWS.api_HostAddress}}/api/pets/1/admin-approve
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTAxMDExMzMsImlhdCI6MTc5MDA5NzUzMywibmJmIjoxNzkwMDk3NTMzLCJzdWIiOiIxIiwibmFtZSI6IkZpcnN0IEFkbWluIiwiZW1haWwiOiJhZG1pbkBwYXdzYi5leGFtcGxlLmNvbSIsImp0aSI6ImQ5MjEzMGExLWJlMmUtNGZjMC1iYThkLWFkNTk4ZDA4OTE2NSIsInJvbGUiOiJBZG1pbmlzdHJhdG9yIiwiY29tcGFueUlkIjoiMiJ9.ZyqjFDj5Lo62xYYo_sZkAklNRrif3WdlPdJ-lFpa-yg
+
+###
+### Veterinarian login (PAWS-B).
+POST {{PAWS.api_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "companyCode": "PAWS-B",
+  "email": "AngeloManingo123@paws.com",
+  "password": "Angelo2801@"
+}
+
+###
+### Vet-approve Buddy.
+POST {{PAWS.api_HostAddress}}/api/pets/1/vet-approve
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTAxMDEyNzgsImlhdCI6MTc5MDA5NzY3OCwibmJmIjoxNzkwMDk3Njc4LCJzdWIiOiI1IiwibmFtZSI6IkFuZ2VsbyBNYW5pbmdvIiwiZW1haWwiOiJBbmdlbG9NYW5pbmdvMTIzQHBhd3MuY29tIiwianRpIjoiODQ1YzUwNTgtMGVlNi00NmUwLWFhNDAtYjE2YjNmNzFhNWFmIiwicm9sZSI6IlZldGVyaW5hcmlhbiIsImNvbXBhbnlJZCI6IjIifQ.ceMNV6P8yywuXSp9EwBcRyDQa5PG2RIMeYSesBig-HM
+
+###
+### Admin-approve Buddy now that vet approval is in place. Should SUCCEED.
+POST {{PAWS.api_HostAddress}}/api/pets/1/admin-approve
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTAxMDExMzMsImlhdCI6MTc5MDA5NzUzMywibmJmIjoxNzkwMDk3NTMzLCJzdWIiOiIxIiwibmFtZSI6IkZpcnN0IEFkbWluIiwiZW1haWwiOiJhZG1pbkBwYXdzYi5leGFtcGxlLmNvbSIsImp0aSI6ImQ5MjEzMGExLWJlMmUtNGZjMC1iYThkLWFkNTk4ZDA4OTE2NSIsInJvbGUiOiJBZG1pbmlzdHJhdG9yIiwiY29tcGFueUlkIjoiMiJ9.ZyqjFDj5Lo62xYYo_sZkAklNRrif3WdlPdJ-lFpa-yg
+
+###
+### List pets again. Confirm Status=Available, both flags true, both approvers recorded, listedAt set.
+GET {{PAWS.api_HostAddress}}/api/pets
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTAxMDExMzMsImlhdCI6MTc5MDA5NzUzMywibmJmIjoxNzkwMDk3NTMzLCJzdWIiOiIxIiwibmFtZSI6IkZpcnN0IEFkbWluIiwiZW1haWwiOiJhZG1pbkBwYXdzYi5leGFtcGxlLmNvbSIsImp0aSI6ImQ5MjEzMGExLWJlMmUtNGZjMC1iYThkLWFkNTk4ZDA4OTE2NSIsInJvbGUiOiJBZG1pbmlzdHJhdG9yIiwiY29tcGFueUlkIjoiMiJ9.ZyqjFDj5Lo62xYYo_sZkAklNRrif3WdlPdJ-lFpa-yg
+
+###
+### Register a fresh Adopter in PAWS-B, so we can test their pet-browsing view.
+POST {{PAWS.api_HostAddress}}/api/auth/register
+Content-Type: application/json
+
+{
+  "companyCode": "PAWS-B",
+  "fullName": "Test Adopter B",
+  "email": "adopter.b@pawsb.example.com",
+  "password": "AdopterB-Test-123!",
+  "confirmPassword": "AdopterB-Test-123!"
+}
+
+###
+### Log in as the new PAWS-B Adopter.
+POST {{PAWS.api_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "companyCode": "PAWS-B",
+  "email": "adopter.b@pawsb.example.com",
+  "password": "AdopterB-Test-123!"
+}
+
+###
+### Adopter lists pets. Should show Buddy (Available), since it's in the SAME company.
+GET {{PAWS.api_HostAddress}}/api/pets
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTAxMDE0MDYsImlhdCI6MTc5MDA5NzgwNiwibmJmIjoxNzkwMDk3ODA2LCJzdWIiOiI2IiwibmFtZSI6IlRlc3QgQWRvcHRlciBCIiwiZW1haWwiOiJhZG9wdGVyLmJAcGF3c2IuZXhhbXBsZS5jb20iLCJqdGkiOiJiOGUyNzRjNC0wODczLTQxNzAtYWNjOS1iY2I3OTdhYTM1ZmEiLCJyb2xlIjoiQWRvcHRlciIsImNvbXBhbnlJZCI6IjIifQ.SxtPbLZQiQICeI0o1qnJcExG7CJMP6k5Z2fJuVkQcOk
+
+###
+### Create a second pet, "Whiskers", a Persian cat — leave it Pending (no approvals yet).
+POST {{PAWS.api_HostAddress}}/api/pets
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTAxMDExMzMsImlhdCI6MTc5MDA5NzUzMywibmJmIjoxNzkwMDk3NTMzLCJzdWIiOiIxIiwibmFtZSI6IkZpcnN0IEFkbWluIiwiZW1haWwiOiJhZG1pbkBwYXdzYi5leGFtcGxlLmNvbSIsImp0aSI6ImQ5MjEzMGExLWJlMmUtNGZjMC1iYThkLWFkNTk4ZDA4OTE2NSIsInJvbGUiOiJBZG1pbmlzdHJhdG9yIiwiY29tcGFueUlkIjoiMiJ9.ZyqjFDj5Lo62xYYo_sZkAklNRrif3WdlPdJ-lFpa-yg
+Content-Type: application/json
+
+{
+  "petCategoryId": 2,
+  "breedId": 2,
+  "petName": "Whiskers",
+  "gender": "Female",
+  "age": 1,
+  "size": "Small",
+  "color": "White",
+  "description": "Calm and affectionate lap cat.",
+  "adoptionFee": 300,
+  "adoptionFeeType": "Fixed"
+}
+
+###
+### Adopter lists pets again. Should show ONLY Buddy — Whiskers must NOT appear (still Pending).
+GET {{PAWS.api_HostAddress}}/api/pets
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTAxMDE0MDYsImlhdCI6MTc5MDA5NzgwNiwibmJmIjoxNzkwMDk3ODA2LCJzdWIiOiI2IiwibmFtZSI6IlRlc3QgQWRvcHRlciBCIiwiZW1haWwiOiJhZG9wdGVyLmJAcGF3c2IuZXhhbXBsZS5jb20iLCJqdGkiOiJiOGUyNzRjNC0wODczLTQxNzAtYWNjOS1iY2I3OTdhYTM1ZmEiLCJyb2xlIjoiQWRvcHRlciIsImNvbXBhbnlJZCI6IjIifQ.SxtPbLZQiQICeI0o1qnJcExG7CJMP6k5Z2fJuVkQcOk
+
+###
+### Adopter tries to view Whiskers (petId 2) directly by ID. Must be REFUSED (404, not 200).
+GET {{PAWS.api_HostAddress}}/api/pets/2
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTAxMDE0MDYsImlhdCI6MTc5MDA5NzgwNiwibmJmIjoxNzkwMDk3ODA2LCJzdWIiOiI2IiwibmFtZSI6IlRlc3QgQWRvcHRlciBCIiwiZW1haWwiOiJhZG9wdGVyLmJAcGF3c2IuZXhhbXBsZS5jb20iLCJqdGkiOiJiOGUyNzRjNC0wODczLTQxNzAtYWNjOS1iY2I3OTdhYTM1ZmEiLCJyb2xlIjoiQWRvcHRlciIsImNvbXBhbnlJZCI6IjIifQ.SxtPbLZQiQICeI0o1qnJcExG7CJMP6k5Z2fJuVkQcOk
+
+###
+### Adopter tries to CREATE a pet. Must be REFUSED (403).
+POST {{PAWS.api_HostAddress}}/api/pets
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTAxMDE0MDYsImlhdCI6MTc5MDA5NzgwNiwibmJmIjoxNzkwMDk3ODA2LCJzdWIiOiI2IiwibmFtZSI6IlRlc3QgQWRvcHRlciBCIiwiZW1haWwiOiJhZG9wdGVyLmJAcGF3c2IuZXhhbXBsZS5jb20iLCJqdGkiOiJiOGUyNzRjNC0wODczLTQxNzAtYWNjOS1iY2I3OTdhYTM1ZmEiLCJyb2xlIjoiQWRvcHRlciIsImNvbXBhbnlJZCI6IjIifQ.SxtPbLZQiQICeI0o1qnJcExG7CJMP6k5Z2fJuVkQcOk
+Content-Type: application/json
+
+{
+  "petCategoryId": 1,
+  "breedId": 1,
+  "petName": "Should Not Work"
+}
+
+###
+### Veterinarian lists pets with NO filter. Should default to their review queue: only Whiskers (Pending).
+GET {{PAWS.api_HostAddress}}/api/pets
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTAxMDEyNzgsImlhdCI6MTc5MDA5NzY3OCwibmJmIjoxNzkwMDk3Njc4LCJzdWIiOiI1IiwibmFtZSI6IkFuZ2VsbyBNYW5pbmdvIiwiZW1haWwiOiJBbmdlbG9NYW5pbmdvMTIzQHBhd3MuY29tIiwianRpIjoiODQ1YzUwNTgtMGVlNi00NmUwLWFhNDAtYjE2YjNmNzFhNWFmIiwicm9sZSI6IlZldGVyaW5hcmlhbiIsImNvbXBhbnlJZCI6IjIifQ.ceMNV6P8yywuXSp9EwBcRyDQa5PG2RIMeYSesBig-HM
+
+###
+### Vet REJECTS Whiskers with a reason.
+POST {{PAWS.api_HostAddress}}/api/pets/2/vet-reject
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTAxMDEyNzgsImlhdCI6MTc5MDA5NzY3OCwibmJmIjoxNzkwMDk3Njc4LCJzdWIiOiI1IiwibmFtZSI6IkFuZ2VsbyBNYW5pbmdvIiwiZW1haWwiOiJBbmdlbG9NYW5pbmdvMTIzQHBhd3MuY29tIiwianRpIjoiODQ1YzUwNTgtMGVlNi00NmUwLWFhNDAtYjE2YjNmNzFhNWFmIiwicm9sZSI6IlZldGVyaW5hcmlhbiIsImNvbXBhbnlJZCI6IjIifQ.ceMNV6P8yywuXSp9EwBcRyDQa5PG2RIMeYSesBig-HM
+Content-Type: application/json
+
+{
+  "vetNotes": "Needs to complete deworming treatment before listing."
+}
+
+###
+### Confirm Whiskers still shows Pending, with the vet's rejection note attached.
+GET {{PAWS.api_HostAddress}}/api/pets/2
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTAxMDEyNzgsImlhdCI6MTc5MDA5NzY3OCwibmJmIjoxNzkwMDk3Njc4LCJzdWIiOiI1IiwibmFtZSI6IkFuZ2VsbyBNYW5pbmdvIiwiZW1haWwiOiJBbmdlbG9NYW5pbmdvMTIzQHBhd3MuY29tIiwianRpIjoiODQ1YzUwNTgtMGVlNi00NmUwLWFhNDAtYjE2YjNmNzFhNWFmIiwicm9sZSI6IlZldGVyaW5hcmlhbiIsImNvbXBhbnlJZCI6IjIifQ.ceMNV6P8yywuXSp9EwBcRyDQa5PG2RIMeYSesBig-HM
+
+###
+### Vet moves Buddy to "Under Treatment".
+POST {{PAWS.api_HostAddress}}/api/pets/1/set-status
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTAxMDEyNzgsImlhdCI6MTc5MDA5NzY3OCwibmJmIjoxNzkwMDk3Njc4LCJzdWIiOiI1IiwibmFtZSI6IkFuZ2VsbyBNYW5pbmdvIiwiZW1haWwiOiJBbmdlbG9NYW5pbmdvMTIzQHBhd3MuY29tIiwianRpIjoiODQ1YzUwNTgtMGVlNi00NmUwLWFhNDAtYjE2YjNmNzFhNWFmIiwicm9sZSI6IlZldGVyaW5hcmlhbiIsImNvbXBhbnlJZCI6IjIifQ.ceMNV6P8yywuXSp9EwBcRyDQa5PG2RIMeYSesBig-HM
+Content-Type: application/json
+
+{
+  "status": "Under Treatment"
+}
+
+###
+### Confirm Buddy's flags after "Under Treatment": IsVetApproved should now be FALSE, IsAdminApproved should STILL be TRUE.
+GET {{PAWS.api_HostAddress}}/api/pets/1
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTAxMDEyNzgsImlhdCI6MTc5MDA5NzY3OCwibmJmIjoxNzkwMDk3Njc4LCJzdWIiOiI1IiwibmFtZSI6IkFuZ2VsbyBNYW5pbmdvIiwiZW1haWwiOiJBbmdlbG9NYW5pbmdvMTIzQHBhd3MuY29tIiwianRpIjoiODQ1YzUwNTgtMGVlNi00NmUwLWFhNDAtYjE2YjNmNzFhNWFmIiwicm9sZSI6IlZldGVyaW5hcmlhbiIsImNvbXBhbnlJZCI6IjIifQ.ceMNV6P8yywuXSp9EwBcRyDQa5PG2RIMeYSesBig-HM
+
+###
+### Vet re-approves Buddy after treatment. Should automatically become Available again.
+POST {{PAWS.api_HostAddress}}/api/pets/1/vet-approve
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTAxMDEyNzgsImlhdCI6MTc5MDA5NzY3OCwibmJmIjoxNzkwMDk3Njc4LCJzdWIiOiI1IiwibmFtZSI6IkFuZ2VsbyBNYW5pbmdvIiwiZW1haWwiOiJBbmdlbG9NYW5pbmdvMTIzQHBhd3MuY29tIiwianRpIjoiODQ1YzUwNTgtMGVlNi00NmUwLWFhNDAtYjE2YjNmNzFhNWFmIiwicm9sZSI6IlZldGVyaW5hcmlhbiIsImNvbXBhbnlJZCI6IjIifQ.ceMNV6P8yywuXSp9EwBcRyDQa5PG2RIMeYSesBig-HM
+
+###
+### Confirm Buddy's full state after the fix.
+GET {{PAWS.api_HostAddress}}/api/pets/1
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTAxMDIwMDIsImlhdCI6MTc5MDA5ODQwMiwibmJmIjoxNzkwMDk4NDAyLCJzdWIiOiIxIiwibmFtZSI6IkZpcnN0IEFkbWluIiwiZW1haWwiOiJhZG1pbkBwYXdzYi5leGFtcGxlLmNvbSIsImp0aSI6ImIzYmRhNWM5LTZiZWMtNGUwYi05NTMzLTc3OTU0YjEwZmFmOCIsInJvbGUiOiJBZG1pbmlzdHJhdG9yIiwiY29tcGFueUlkIjoiMiJ9.wIwpPkRvc30ESwXadJ_RDosVy6lw3kd9KuHP8U5EG2c
+
+###
+### Fresh Veterinarian login.
+POST {{PAWS.api_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "companyCode": "PAWS-B",
+  "email": "AngeloManingo123@paws.com",
+  "password": "Angelo2801@"
+}
+
+###
+### Veterinarian tries to set status to "Unavailable". Must be REFUSED (403).
+POST {{PAWS.api_HostAddress}}/api/pets/1/set-status
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTAxMDIxMDQsImlhdCI6MTc5MDA5ODUwNCwibmJmIjoxNzkwMDk4NTA0LCJzdWIiOiI1IiwibmFtZSI6IkFuZ2VsbyBNYW5pbmdvIiwiZW1haWwiOiJBbmdlbG9NYW5pbmdvMTIzQHBhd3MuY29tIiwianRpIjoiOGQ2ZTBjZDgtODE2OS00ODViLWEyMjQtZGNkNWU4ODgxYmRkIiwicm9sZSI6IlZldGVyaW5hcmlhbiIsImNvbXBhbnlJZCI6IjIifQ.Q6svejz3RY2DPMkB3EXGcSTGaA4cxei0KmHk53PzfLY
+Content-Type: application/json
+
+{
+  "status": "Unavailable"
+}
+
+###
+### Administrator sets Buddy to "Unavailable". Should SUCCEED.
+POST {{PAWS.api_HostAddress}}/api/pets/1/set-status
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTAxMDIwMDIsImlhdCI6MTc5MDA5ODQwMiwibmJmIjoxNzkwMDk4NDAyLCJzdWIiOiIxIiwibmFtZSI6IkZpcnN0IEFkbWluIiwiZW1haWwiOiJhZG1pbkBwYXdzYi5leGFtcGxlLmNvbSIsImp0aSI6ImIzYmRhNWM5LTZiZWMtNGUwYi05NTMzLTc3OTU0YjEwZmFmOCIsInJvbGUiOiJBZG1pbmlzdHJhdG9yIiwiY29tcGFueUlkIjoiMiJ9.wIwpPkRvc30ESwXadJ_RDosVy6lw3kd9KuHP8U5EG2c
+Content-Type: application/json
+
+{
+  "status": "Unavailable"
+}
+
+###
+### Try creating a pet with a bad ImagePath (no http/https). Must be REFUSED.
+POST {{PAWS.api_HostAddress}}/api/pets
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTAxMDIwMDIsImlhdCI6MTc5MDA5ODQwMiwibmJmIjoxNzkwMDk4NDAyLCJzdWIiOiIxIiwibmFtZSI6IkZpcnN0IEFkbWluIiwiZW1haWwiOiJhZG1pbkBwYXdzYi5leGFtcGxlLmNvbSIsImp0aSI6ImIzYmRhNWM5LTZiZWMtNGUwYi05NTMzLTc3OTU0YjEwZmFmOCIsInJvbGUiOiJBZG1pbmlzdHJhdG9yIiwiY29tcGFueUlkIjoiMiJ9.wIwpPkRvc30ESwXadJ_RDosVy6lw3kd9KuHP8U5EG2c
+Content-Type: application/json
+
+{
+  "petCategoryId": 1,
+  "breedId": 1,
+  "petName": "Bad Image Test",
+  "imagePath": "not-a-real-url"
+}
+
+###
+
+### ===== Step 17: Adoption Applications =====
+### Fresh Administrator login (PAWS-B).
+POST {{PAWS.api_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "companyCode": "PAWS-B",
+  "email": "admin@pawsb.example.com",
+  "password": "Bootstrap-Test-123!"
+}
+
+###
+### Move Buddy from Unavailable back toward Available. First, we need vet re-approval.
+### (Buddy is currently Unavailable, not Under Treatment, so set-status back first isn't
+### needed — Unavailable can go straight to re-approval attempts. Let's check its current state.)
+GET {{PAWS.api_HostAddress}}/api/pets/1
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTAxNTA3ODYsImlhdCI6MTc5MDE0NzE4NiwibmJmIjoxNzkwMTQ3MTg2LCJzdWIiOiIxIiwibmFtZSI6IkZpcnN0IEFkbWluIiwiZW1haWwiOiJhZG1pbkBwYXdzYi5leGFtcGxlLmNvbSIsImp0aSI6ImI4ZjcxYzQ3LWVjODYtNDkxOS05ZmUzLTFiODBmMzM4MjQwMyIsInJvbGUiOiJBZG1pbmlzdHJhdG9yIiwiY29tcGFueUlkIjoiMiJ9.JHak-IfSZPrL2ZLaW8ABnFzrI_3--uHnKu_ltB-eXng
+
+###
+### Move Buddy to Under Treatment (a valid transition from any non-Adopted state).
+POST {{PAWS.api_HostAddress}}/api/pets/1/set-status
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTAxNTA3ODYsImlhdCI6MTc5MDE0NzE4NiwibmJmIjoxNzkwMTQ3MTg2LCJzdWIiOiIxIiwibmFtZSI6IkZpcnN0IEFkbWluIiwiZW1haWwiOiJhZG1pbkBwYXdzYi5leGFtcGxlLmNvbSIsImp0aSI6ImI4ZjcxYzQ3LWVjODYtNDkxOS05ZmUzLTFiODBmMzM4MjQwMyIsInJvbGUiOiJBZG1pbmlzdHJhdG9yIiwiY29tcGFueUlkIjoiMiJ9.JHak-IfSZPrL2ZLaW8ABnFzrI_3--uHnKu_ltB-eXng
+Content-Type: application/json
+
+{
+  "status": "Under Treatment"
+}
+
+###
+### Fresh Veterinarian login.
+POST {{PAWS.api_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "companyCode": "PAWS-B",
+  "email": "AngeloManingo123@paws.com",
+  "password": "Angelo2801@"
+}
+
+###
+### Vet re-approves Buddy. Should become Available again.
+POST {{PAWS.api_HostAddress}}/api/pets/1/vet-approve
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTAxNTA4NjIsImlhdCI6MTc5MDE0NzI2MiwibmJmIjoxNzkwMTQ3MjYyLCJzdWIiOiI1IiwibmFtZSI6IkFuZ2VsbyBNYW5pbmdvIiwiZW1haWwiOiJBbmdlbG9NYW5pbmdvMTIzQHBhd3MuY29tIiwianRpIjoiZGZjZWRkYzAtMjAzZS00ZjljLWE5ZWMtOWY2N2I5MGEyYWMyIiwicm9sZSI6IlZldGVyaW5hcmlhbiIsImNvbXBhbnlJZCI6IjIifQ.-C3k-k-CbN4__x5bTRQ790WhkdhpxhDALmuYts5uLyI
+
+###
+### Fresh Adopter login (PAWS-B).
+POST {{PAWS.api_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "companyCode": "PAWS-B",
+  "email": "adopter.b@pawsb.example.com",
+  "password": "AdopterB-Test-123!"
+}
+
+###
+### Submit an application for Buddy (petId 1).
+POST {{PAWS.api_HostAddress}}/api/adoption-applications
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTAxNTA5MDksImlhdCI6MTc5MDE0NzMwOSwibmJmIjoxNzkwMTQ3MzA5LCJzdWIiOiI2IiwibmFtZSI6IlRlc3QgQWRvcHRlciBCIiwiZW1haWwiOiJhZG9wdGVyLmJAcGF3c2IuZXhhbXBsZS5jb20iLCJqdGkiOiIxNjE5MTg5NC1iOGRmLTQ3MjgtOWE3NS0zODM0NWZmMWNlZmIiLCJyb2xlIjoiQWRvcHRlciIsImNvbXBhbnlJZCI6IjIifQ.LtgZP8y-jicGHIbgqX83azg9jGodxjT-4l4Rn0qYUVw
+Content-Type: application/json
+
+{
+  "petId": 1,
+  "fullName": "Test Adopter B",
+  "email": "adopter.b@pawsb.example.com",
+  "phone": "09171111111",
+  "address": "123 Sample Street, Davao City",
+  "occupation": "Teacher",
+  "housingType": "Apartment",
+  "homeDescription": "Two-bedroom apartment with a small balcony.",
+  "hasYard": false,
+  "hasOtherPets": false,
+  "hasChildren": false,
+  "workingHours": "8am-5pm weekdays",
+  "reasonForAdopting": "Looking for a loyal companion for daily walks.",
+  "petExperience": "Grew up with dogs in the family home.",
+  "emergencyContactName": "Jane Doe",
+  "emergencyContactPhone": "09172222222",
+  "emergencyContactRelationship": "Sister"
+}
+
+###
+### Try submitting a SECOND application for the same pet (Buddy) while the first is still open. Must be REFUSED.
+POST {{PAWS.api_HostAddress}}/api/adoption-applications
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTAxNTA5MDksImlhdCI6MTc5MDE0NzMwOSwibmJmIjoxNzkwMTQ3MzA5LCJzdWIiOiI2IiwibmFtZSI6IlRlc3QgQWRvcHRlciBCIiwiZW1haWwiOiJhZG9wdGVyLmJAcGF3c2IuZXhhbXBsZS5jb20iLCJqdGkiOiIxNjE5MTg5NC1iOGRmLTQ3MjgtOWE3NS0zODM0NWZmMWNlZmIiLCJyb2xlIjoiQWRvcHRlciIsImNvbXBhbnlJZCI6IjIifQ.LtgZP8y-jicGHIbgqX83azg9jGodxjT-4l4Rn0qYUVw
+Content-Type: application/json
+
+{
+  "petId": 1,
+  "fullName": "Test Adopter B",
+  "reasonForAdopting": "Trying again just to test the duplicate check."
+}
+
+###
+### Try applying for Whiskers (petId 2), which is still Pending, not Available. Must be REFUSED.
+POST {{PAWS.api_HostAddress}}/api/adoption-applications
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTAxNTA5MDksImlhdCI6MTc5MDE0NzMwOSwibmJmIjoxNzkwMTQ3MzA5LCJzdWIiOiI2IiwibmFtZSI6IlRlc3QgQWRvcHRlciBCIiwiZW1haWwiOiJhZG9wdGVyLmJAcGF3c2IuZXhhbXBsZS5jb20iLCJqdGkiOiIxNjE5MTg5NC1iOGRmLTQ3MjgtOWE3NS0zODM0NWZmMWNlZmIiLCJyb2xlIjoiQWRvcHRlciIsImNvbXBhbnlJZCI6IjIifQ.LtgZP8y-jicGHIbgqX83azg9jGodxjT-4l4Rn0qYUVw
+Content-Type: application/json
+
+{
+  "petId": 2,
+  "fullName": "Test Adopter B",
+  "reasonForAdopting": "Testing the availability check."
+}
+
+###
+### Check Whiskers' CURRENT actual status right now.
+GET {{PAWS.api_HostAddress}}/api/pets/2
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTAxNTA3ODYsImlhdCI6MTc5MDE0NzE4NiwibmJmIjoxNzkwMTQ3MTg2LCJzdWIiOiIxIiwibmFtZSI6IkZpcnN0IEFkbWluIiwiZW1haWwiOiJhZG1pbkBwYXdzYi5leGFtcGxlLmNvbSIsImp0aSI6ImI4ZjcxYzQ3LWVjODYtNDkxOS05ZmUzLTFiODBmMzM4MjQwMyIsInJvbGUiOiJBZG1pbmlzdHJhdG9yIiwiY29tcGFueUlkIjoiMiJ9.JHak-IfSZPrL2ZLaW8ABnFzrI_3--uHnKu_ltB-eXng
+
+###
+### Set Buddy to Unavailable (for test purposes).
+POST {{PAWS.api_HostAddress}}/api/pets/1/set-status
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTAxNTA3ODYsImlhdCI6MTc5MDE0NzE4NiwibmJmIjoxNzkwMTQ3MTg2LCJzdWIiOiIxIiwibmFtZSI6IkZpcnN0IEFkbWluIiwiZW1haWwiOiJhZG1pbkBwYXdzYi5leGFtcGxlLmNvbSIsImp0aSI6ImI4ZjcxYzQ3LWVjODYtNDkxOS05ZmUzLTFiODBmMzM4MjQwMyIsInJvbGUiOiJBZG1pbmlzdHJhdG9yIiwiY29tcGFueUlkIjoiMiJ9.JHak-IfSZPrL2ZLaW8ABnFzrI_3--uHnKu_ltB-eXng
+Content-Type: application/json
+
+{
+  "status": "Unavailable"
+}
+
+###
+### Try applying for Buddy (petId 1), which is now Unavailable. Must be REFUSED.
+POST {{PAWS.api_HostAddress}}/api/adoption-applications
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTAxNTExMTUsImlhdCI6MTc5MDE0NzUxNSwibmJmIjoxNzkwMTQ3NTE1LCJzdWIiOiI2IiwibmFtZSI6IlRlc3QgQWRvcHRlciBCIiwiZW1haWwiOiJhZG9wdGVyLmJAcGF3c2IuZXhhbXBsZS5jb20iLCJqdGkiOiJlOTVkZjU2My0wMDkxLTQ1NzQtYjU5Mi0xZWYyYjIzMzJkZTAiLCJyb2xlIjoiQWRvcHRlciIsImNvbXBhbnlJZCI6IjIifQ.PVLWU6la_0OMWxadktkm0Z8j_RceRBPkGqXvxEkYKIo
+Content-Type: application/json
+
+{
+  "petId": 1,
+  "fullName": "Test Adopter B",
+  "reasonForAdopting": "Testing the availability check properly this time."
+}
+
+###
+### Move Buddy through Under Treatment, then re-approve to bring it back to Available.
+POST {{PAWS.api_HostAddress}}/api/pets/1/set-status
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTAxNTA3ODYsImlhdCI6MTc5MDE0NzE4NiwibmJmIjoxNzkwMTQ3MTg2LCJzdWIiOiIxIiwibmFtZSI6IkZpcnN0IEFkbWluIiwiZW1haWwiOiJhZG1pbkBwYXdzYi5leGFtcGxlLmNvbSIsImp0aSI6ImI4ZjcxYzQ3LWVjODYtNDkxOS05ZmUzLTFiODBmMzM4MjQwMyIsInJvbGUiOiJBZG1pbmlzdHJhdG9yIiwiY29tcGFueUlkIjoiMiJ9.JHak-IfSZPrL2ZLaW8ABnFzrI_3--uHnKu_ltB-eXng
+Content-Type: application/json
+
+{
+  "status": "Under Treatment"
+}
+
+###
+### Vet re-approves Buddy.
+POST {{PAWS.api_HostAddress}}/api/pets/1/vet-approve
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTAxNTEyMDcsImlhdCI6MTc5MDE0NzYwNywibmJmIjoxNzkwMTQ3NjA3LCJzdWIiOiI1IiwibmFtZSI6IkFuZ2VsbyBNYW5pbmdvIiwiZW1haWwiOiJBbmdlbG9NYW5pbmdvMTIzQHBhd3MuY29tIiwianRpIjoiNGMwMjgyN2EtZTI4ZC00MTllLTkwZTItZTZjMTU3MzQ5MjFhIiwicm9sZSI6IlZldGVyaW5hcmlhbiIsImNvbXBhbnlJZCI6IjIifQ.nqqWnxuaBsuVit4SfnJ7G42m1i1UpI6ySAV8CtjHDm0
+
+###
+### Confirm: applying again for Buddy is STILL blocked, but now for the DUPLICATE reason, not availability.
+POST {{PAWS.api_HostAddress}}/api/adoption-applications
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTAxNTEyNjQsImlhdCI6MTc5MDE0NzY2NCwibmJmIjoxNzkwMTQ3NjY0LCJzdWIiOiI2IiwibmFtZSI6IlRlc3QgQWRvcHRlciBCIiwiZW1haWwiOiJhZG9wdGVyLmJAcGF3c2IuZXhhbXBsZS5jb20iLCJqdGkiOiI4MjMyNzNhNy03OTU3LTQxMTUtYjU1Mi05NmVkYTIxMWQwMmIiLCJyb2xlIjoiQWRvcHRlciIsImNvbXBhbnlJZCI6IjIifQ.wDYwCubqNLZ0U3OvKR1_yfUVrP_TKoDwVmOXUzrxGFE
+Content-Type: application/json
+
+{
+  "petId": 1,
+  "fullName": "Test Adopter B",
+  "reasonForAdopting": "Confirming duplicate-check still applies now that pet is Available again."
+}
+
+###
+### Administrator moves the Buddy application to Under Review.
+POST {{PAWS.api_HostAddress}}/api/adoption-applications/1/under-review
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTAxNTA3ODYsImlhdCI6MTc5MDE0NzE4NiwibmJmIjoxNzkwMTQ3MTg2LCJzdWIiOiIxIiwibmFtZSI6IkZpcnN0IEFkbWluIiwiZW1haWwiOiJhZG1pbkBwYXdzYi5leGFtcGxlLmNvbSIsImp0aSI6ImI4ZjcxYzQ3LWVjODYtNDkxOS05ZmUzLTFiODBmMzM4MjQwMyIsInJvbGUiOiJBZG1pbmlzdHJhdG9yIiwiY29tcGFueUlkIjoiMiJ9.JHak-IfSZPrL2ZLaW8ABnFzrI_3--uHnKu_ltB-eXng
+Content-Type: application/json
+
+{
+  "remarks": "Initial review looks good, scheduling a home visit interview."
+}
+
+###
+### Schedule an interview for this application.
+POST {{PAWS.api_HostAddress}}/api/adoption-applications/1/schedule-interview
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTAxNTA3ODYsImlhdCI6MTc5MDE0NzE4NiwibmJmIjoxNzkwMTQ3MTg2LCJzdWIiOiIxIiwibmFtZSI6IkZpcnN0IEFkbWluIiwiZW1haWwiOiJhZG1pbkBwYXdzYi5leGFtcGxlLmNvbSIsImp0aSI6ImI4ZjcxYzQ3LWVjODYtNDkxOS05ZmUzLTFiODBmMzM4MjQwMyIsInJvbGUiOiJBZG1pbmlzdHJhdG9yIiwiY29tcGFueUlkIjoiMiJ9.JHak-IfSZPrL2ZLaW8ABnFzrI_3--uHnKu_ltB-eXng
+Content-Type: application/json
+
+{
+  "interviewDate": "2026-09-30T10:00:00",
+  "interviewNotes": "Home visit scheduled to check the apartment setup."
+}
+
+###
+### Confirm the application's full state: Under Review, remarks, interview date/notes all present.
+GET {{PAWS.api_HostAddress}}/api/adoption-applications/1
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTAxNTA3ODYsImlhdCI6MTc5MDE0NzE4NiwibmJmIjoxNzkwMTQ3MTg2LCJzdWIiOiIxIiwibmFtZSI6IkZpcnN0IEFkbWluIiwiZW1haWwiOiJhZG1pbkBwYXdzYi5leGFtcGxlLmNvbSIsImp0aSI6ImI4ZjcxYzQ3LWVjODYtNDkxOS05ZmUzLTFiODBmMzM4MjQwMyIsInJvbGUiOiJBZG1pbmlzdHJhdG9yIiwiY29tcGFueUlkIjoiMiJ9.JHak-IfSZPrL2ZLaW8ABnFzrI_3--uHnKu_ltB-eXng
+
+###
+### Register a second PAWS-B Adopter, so we can test the auto-reject-siblings rule.
+POST {{PAWS.api_HostAddress}}/api/auth/register
+Content-Type: application/json
+
+{
+  "companyCode": "PAWS-B",
+  "fullName": "Test Adopter C",
+  "email": "adopter.c@pawsb.example.com",
+  "password": "AdopterC-Test-123!",
+  "confirmPassword": "AdopterC-Test-123!"
+}
+
+###
+### Log in as Adopter C.
+POST {{PAWS.api_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "companyCode": "PAWS-B",
+  "email": "adopter.c@pawsb.example.com",
+  "password": "AdopterC-Test-123!"
+}
+
+###
+### Adopter C submits an application for Buddy too — a competing application.
+POST {{PAWS.api_HostAddress}}/api/adoption-applications
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTAxNTE0NzUsImlhdCI6MTc5MDE0Nzg3NSwibmJmIjoxNzkwMTQ3ODc1LCJzdWIiOiI3IiwibmFtZSI6IlRlc3QgQWRvcHRlciBDIiwiZW1haWwiOiJhZG9wdGVyLmNAcGF3c2IuZXhhbXBsZS5jb20iLCJqdGkiOiJkMmE5MGMyNy0wODQwLTRlNTctYTdjNy0yNGZhYzBjNDg2ZmIiLCJyb2xlIjoiQWRvcHRlciIsImNvbXBhbnlJZCI6IjIifQ.Lrh2z69SUCGwM18GqONY8C7fAhRAXFeGeuuOXiUJZ7E
+Content-Type: application/json
+
+{
+  "petId": 1,
+  "fullName": "Test Adopter C",
+  "reasonForAdopting": "Also interested in adopting Buddy."
+}
+
+###
+### Administrator approves Adopter B's application (id 1).
+POST {{PAWS.api_HostAddress}}/api/adoption-applications/1/approve
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTAxNTA3ODYsImlhdCI6MTc5MDE0NzE4NiwibmJmIjoxNzkwMTQ3MTg2LCJzdWIiOiIxIiwibmFtZSI6IkZpcnN0IEFkbWluIiwiZW1haWwiOiJhZG1pbkBwYXdzYi5leGFtcGxlLmNvbSIsImp0aSI6ImI4ZjcxYzQ3LWVjODYtNDkxOS05ZmUzLTFiODBmMzM4MjQwMyIsInJvbGUiOiJBZG1pbmlzdHJhdG9yIiwiY29tcGFueUlkIjoiMiJ9.JHak-IfSZPrL2ZLaW8ABnFzrI_3--uHnKu_ltB-eXng
+Content-Type: application/json
+
+{
+  "remarks": "Home visit went well. Approved for adoption."
+}
+
+###
+### Confirm Buddy's status is now Adopted.
+GET {{PAWS.api_HostAddress}}/api/pets/1
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTAxNTA3ODYsImlhdCI6MTc5MDE0NzE4NiwibmJmIjoxNzkwMTQ3MTg2LCJzdWIiOiIxIiwibmFtZSI6IkZpcnN0IEFkbWluIiwiZW1haWwiOiJhZG1pbkBwYXdzYi5leGFtcGxlLmNvbSIsImp0aSI6ImI4ZjcxYzQ3LWVjODYtNDkxOS05ZmUzLTFiODBmMzM4MjQwMyIsInJvbGUiOiJBZG1pbmlzdHJhdG9yIiwiY29tcGFueUlkIjoiMiJ9.JHak-IfSZPrL2ZLaW8ABnFzrI_3--uHnKu_ltB-eXng
+
+###
+### Confirm application 1 is now Approved.
+GET {{PAWS.api_HostAddress}}/api/adoption-applications/1
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTAxNTA3ODYsImlhdCI6MTc5MDE0NzE4NiwibmJmIjoxNzkwMTQ3MTg2LCJzdWIiOiIxIiwibmFtZSI6IkZpcnN0IEFkbWluIiwiZW1haWwiOiJhZG1pbkBwYXdzYi5leGFtcGxlLmNvbSIsImp0aSI6ImI4ZjcxYzQ3LWVjODYtNDkxOS05ZmUzLTFiODBmMzM4MjQwMyIsInJvbGUiOiJBZG1pbmlzdHJhdG9yIiwiY29tcGFueUlkIjoiMiJ9.JHak-IfSZPrL2ZLaW8ABnFzrI_3--uHnKu_ltB-eXng
+
+###
+
+### Confirm application 3 was auto-rejected.
+GET {{PAWS.api_HostAddress}}/api/adoption-applications/3
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTAxNTA3ODYsImlhdCI6MTc5MDE0NzE4NiwibmJmIjoxNzkwMTQ3MTg2LCJzdWIiOiIxIiwibmFtZSI6IkZpcnN0IEFkbWluIiwiZW1haWwiOiJhZG1pbkBwYXdzYi5leGFtcGxlLmNvbSIsImp0aSI6ImI4ZjcxYzQ3LWVjODYtNDkxOS05ZmUzLTFiODBmMzM4MjQwMyIsInJvbGUiOiJBZG1pbmlzdHJhdG9yIiwiY29tcGFueUlkIjoiMiJ9.JHak-IfSZPrL2ZLaW8ABnFzrI_3--uHnKu_ltB-eXng
+
+###
+### Adopter C views their own REJECTED application. Should still SUCCEED (always viewable).
+GET {{PAWS.api_HostAddress}}/api/adoption-applications/3
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTAxNTE2NzcsImlhdCI6MTc5MDE0ODA3NywibmJmIjoxNzkwMTQ4MDc3LCJzdWIiOiI3IiwibmFtZSI6IlRlc3QgQWRvcHRlciBDIiwiZW1haWwiOiJhZG9wdGVyLmNAcGF3c2IuZXhhbXBsZS5jb20iLCJqdGkiOiI1MGNmZDg0ZC0yYTkzLTRlNTgtYjdiOS03OGQzNWQyMWI4YTgiLCJyb2xlIjoiQWRvcHRlciIsImNvbXBhbnlJZCI6IjIifQ.xI2NWv0gaE7EzrxMyppUq4t4cOnVq0SzmdjrXir-kRk
+
+###
+### Adopter C tries to view Adopter B's application (id 1). Must be REFUSED.
+GET {{PAWS.api_HostAddress}}/api/adoption-applications/1
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTAxNTE2NzcsImlhdCI6MTc5MDE0ODA3NywibmJmIjoxNzkwMTQ4MDc3LCJzdWIiOiI3IiwibmFtZSI6IlRlc3QgQWRvcHRlciBDIiwiZW1haWwiOiJhZG9wdGVyLmNAcGF3c2IuZXhhbXBsZS5jb20iLCJqdGkiOiI1MGNmZDg0ZC0yYTkzLTRlNTgtYjdiOS03OGQzNWQyMWI4YTgiLCJyb2xlIjoiQWRvcHRlciIsImNvbXBhbnlJZCI6IjIifQ.xI2NWv0gaE7EzrxMyppUq4t4cOnVq0SzmdjrXir-kRk
+
+###
+### Veterinarian tries to list applications. Must be REFUSED (403).
+GET {{PAWS.api_HostAddress}}/api/adoption-applications
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTAxNTEyMDcsImlhdCI6MTc5MDE0NzYwNywibmJmIjoxNzkwMTQ3NjA3LCJzdWIiOiI1IiwibmFtZSI6IkFuZ2VsbyBNYW5pbmdvIiwiZW1haWwiOiJBbmdlbG9NYW5pbmdvMTIzQHBhd3MuY29tIiwianRpIjoiNGMwMjgyN2EtZTI4ZC00MTllLTkwZTItZTZjMTU3MzQ5MjFhIiwicm9sZSI6IlZldGVyaW5hcmlhbiIsImNvbXBhbnlJZCI6IjIifQ.nqqWnxuaBsuVit4SfnJ7G42m1i1UpI6ySAV8CtjHDm0
+
+###
+### Adopter B applies for Whiskers (petId 2, still Available) to test Withdraw.
+POST {{PAWS.api_HostAddress}}/api/adoption-applications
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTAxNTE4NTIsImlhdCI6MTc5MDE0ODI1MiwibmJmIjoxNzkwMTQ4MjUyLCJzdWIiOiI2IiwibmFtZSI6IlRlc3QgQWRvcHRlciBCIiwiZW1haWwiOiJhZG9wdGVyLmJAcGF3c2IuZXhhbXBsZS5jb20iLCJqdGkiOiIyNTM0YTc1MS0zYjcyLTQ3N2MtOTU2Mi1kMjgwOTZmMDMyYWMiLCJyb2xlIjoiQWRvcHRlciIsImNvbXBhbnlJZCI6IjIifQ.-ygKAShOSiRnzqonQJVvBdug6w5HJId5CG-CWqnpO0A
+Content-Type: application/json
+
+{
+  "petId": 2,
+  "fullName": "Test Adopter B",
+  "reasonForAdopting": "Testing withdraw."
+}
+
+###
+### Fresh Adopter B login.
+POST {{PAWS.api_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "companyCode": "PAWS-B",
+  "email": "adopter.b@pawsb.example.com",
+  "password": "AdopterB-Test-123!"
+}
+
+###
+### List Adopter B's own applications, to find the Whiskers one.
+GET {{PAWS.api_HostAddress}}/api/adoption-applications
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTAxNTE4NTIsImlhdCI6MTc5MDE0ODI1MiwibmJmIjoxNzkwMTQ4MjUyLCJzdWIiOiI2IiwibmFtZSI6IlRlc3QgQWRvcHRlciBCIiwiZW1haWwiOiJhZG9wdGVyLmJAcGF3c2IuZXhhbXBsZS5jb20iLCJqdGkiOiIyNTM0YTc1MS0zYjcyLTQ3N2MtOTU2Mi1kMjgwOTZmMDMyYWMiLCJyb2xlIjoiQWRvcHRlciIsImNvbXBhbnlJZCI6IjIifQ.-ygKAShOSiRnzqonQJVvBdug6w5HJId5CG-CWqnpO0A
+
+###
+### Adopter B withdraws their application for Whiskers (id 2).
+POST {{PAWS.api_HostAddress}}/api/adoption-applications/2/withdraw
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTAxNTE4NTIsImlhdCI6MTc5MDE0ODI1MiwibmJmIjoxNzkwMTQ4MjUyLCJzdWIiOiI2IiwibmFtZSI6IlRlc3QgQWRvcHRlciBCIiwiZW1haWwiOiJhZG9wdGVyLmJAcGF3c2IuZXhhbXBsZS5jb20iLCJqdGkiOiIyNTM0YTc1MS0zYjcyLTQ3N2MtOTU2Mi1kMjgwOTZmMDMyYWMiLCJyb2xlIjoiQWRvcHRlciIsImNvbXBhbnlJZCI6IjIifQ.-ygKAShOSiRnzqonQJVvBdug6w5HJId5CG-CWqnpO0A
+
+###
+### Try withdrawing the SAME application again. Must be REFUSED (already Withdrawn).
+POST {{PAWS.api_HostAddress}}/api/adoption-applications/2/withdraw
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTAxNTE4NTIsImlhdCI6MTc5MDE0ODI1MiwibmJmIjoxNzkwMTQ4MjUyLCJzdWIiOiI2IiwibmFtZSI6IlRlc3QgQWRvcHRlciBCIiwiZW1haWwiOiJhZG9wdGVyLmJAcGF3c2IuZXhhbXBsZS5jb20iLCJqdGkiOiIyNTM0YTc1MS0zYjcyLTQ3N2MtOTU2Mi1kMjgwOTZmMDMyYWMiLCJyb2xlIjoiQWRvcHRlciIsImNvbXBhbnlJZCI6IjIifQ.-ygKAShOSiRnzqonQJVvBdug6w5HJId5CG-CWqnpO0A
+
+###
+### Fresh Adopter C login.
+POST {{PAWS.api_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "companyCode": "PAWS-B",
+  "email": "adopter.c@pawsb.example.com",
+  "password": "AdopterC-Test-123!"
+}
+
+###
+### Fresh Administrator login.
+POST {{PAWS.api_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "companyCode": "PAWS-B",
+  "email": "admin@pawsb.example.com",
+  "password": "Bootstrap-Test-123!"
+}
+
+###
+### Adopter C applies for Whiskers.
+POST {{PAWS.api_HostAddress}}/api/adoption-applications
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTAxNTIwMTcsImlhdCI6MTc5MDE0ODQxNywibmJmIjoxNzkwMTQ4NDE3LCJzdWIiOiI3IiwibmFtZSI6IlRlc3QgQWRvcHRlciBDIiwiZW1haWwiOiJhZG9wdGVyLmNAcGF3c2IuZXhhbXBsZS5jb20iLCJqdGkiOiJhOWI4Mjc5Mi0wNTU1LTRmMDAtOTMyYi0xMjNmMzI2OTVhZDMiLCJyb2xlIjoiQWRvcHRlciIsImNvbXBhbnlJZCI6IjIifQ.CKeHOtjQJTG_dD_bdHcF1byLPi-5v-JXMu85NutI-DI
+Content-Type: application/json
+
+{
+  "petId": 2,
+  "fullName": "Test Adopter C",
+  "reasonForAdopting": "Testing direct reject."
+}
+
+###
+### Administrator rejects it directly from Submitted (no interview needed).
+POST {{PAWS.api_HostAddress}}/api/adoption-applications/3/reject
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTAxNTIwOTYsImlhdCI6MTc5MDE0ODQ5NiwibmJmIjoxNzkwMTQ4NDk2LCJzdWIiOiIxIiwibmFtZSI6IkZpcnN0IEFkbWluIiwiZW1haWwiOiJhZG1pbkBwYXdzYi5leGFtcGxlLmNvbSIsImp0aSI6IjcwZjE2NDg2LTg5ZmEtNGZjOS1iMWRmLWE3NGYzMWU5ZjcxMyIsInJvbGUiOiJBZG1pbmlzdHJhdG9yIiwiY29tcGFueUlkIjoiMiJ9.9gYr3IMNjevI1lCMcnETQVmq5nZUubIH6qbbtM8rJyo
+Content-Type: application/json
+
+{
+  "rejectionReason": "Applicant's living situation is not suitable for this pet's needs."
+}
+
+###
+### List Adopter C's applications to find the exact ID of the newest one (APP-2026-000004).
+GET {{PAWS.api_HostAddress}}/api/adoption-applications
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTAxNTIwMTcsImlhdCI6MTc5MDE0ODQxNywibmJmIjoxNzkwMTQ4NDE3LCJzdWIiOiI3IiwibmFtZSI6IlRlc3QgQWRvcHRlciBDIiwiZW1haWwiOiJhZG9wdGVyLmNAcGF3c2IuZXhhbXBsZS5jb20iLCJqdGkiOiJhOWI4Mjc5Mi0wNTU1LTRmMDAtOTMyYi0xMjNmMzI2OTVhZDMiLCJyb2xlIjoiQWRvcHRlciIsImNvbXBhbnlJZCI6IjIifQ.CKeHOtjQJTG_dD_bdHcF1byLPi-5v-JXMu85NutI-DI
+
+###
+### Administrator rejects application 4 directly from Submitted.
+POST {{PAWS.api_HostAddress}}/api/adoption-applications/4/reject
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTAxNTIxOTIsImlhdCI6MTc5MDE0ODU5MiwibmJmIjoxNzkwMTQ4NTkyLCJzdWIiOiIxIiwibmFtZSI6IkZpcnN0IEFkbWluIiwiZW1haWwiOiJhZG1pbkBwYXdzYi5leGFtcGxlLmNvbSIsImp0aSI6ImRhNGJlZjQyLTUwOTgtNDc4Zi1hOWM2LWE3OWM0OTIzZTJiYSIsInJvbGUiOiJBZG1pbmlzdHJhdG9yIiwiY29tcGFueUlkIjoiMiJ9.Y0xX2GPzxVlvdHf_T-3p9zQ-SA-DdXmwLBQ7a-KqknM
+Content-Type: application/json
+
+{
+  "rejectionReason": "Applicant's living situation is not suitable for this pet's needs."
+}
+
+###
+
+### ===== Customer Service: quick smoke test =====
+### Fresh Adopter B login (PAWS-B).
+POST {{PAWS.api_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "companyCode": "PAWS-B",
+  "email": "adopter.b@pawsb.example.com",
+  "password": "AdopterB-Test-123!"
+}
+
+###
+### Adopter submits a Complaint.
+POST {{PAWS.api_HostAddress}}/api/customer-service
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTAxNzUzMDIsImlhdCI6MTc5MDE3MTcwMiwibmJmIjoxNzkwMTcxNzAyLCJzdWIiOiI2IiwibmFtZSI6IlRlc3QgQWRvcHRlciBCIiwiZW1haWwiOiJhZG9wdGVyLmJAcGF3c2IuZXhhbXBsZS5jb20iLCJqdGkiOiJmNzBkM2RkYy1jMTM4LTQ4MDQtYmU3ZC1hOTZjZTZhMDkwYzMiLCJyb2xlIjoiQWRvcHRlciIsImNvbXBhbnlJZCI6IjIifQ.vKLhbU_CA8B3IZbrObzlFnkEileq2p8KALhnbJENYGI
+Content-Type: application/json
+
+{
+  "type": "Complaint",
+  "subject": "Delayed response",
+  "message": "I haven't heard back about my adoption application in a week."
+}
+
+###
+### Fresh Administrator login.
+POST {{PAWS.api_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "companyCode": "PAWS-B",
+  "email": "admin@pawsb.example.com",
+  "password": "Bootstrap-Test-123!"
+}
+
+###
+### Administrator lists all customer service requests.
+GET {{PAWS.api_HostAddress}}/api/customer-service
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTAxNzUzNTQsImlhdCI6MTc5MDE3MTc1NCwibmJmIjoxNzkwMTcxNzU0LCJzdWIiOiIxIiwibmFtZSI6IkZpcnN0IEFkbWluIiwiZW1haWwiOiJhZG1pbkBwYXdzYi5leGFtcGxlLmNvbSIsImp0aSI6ImM1N2UzNjgzLTdiNWQtNDE2Ny04NWJkLTY1Y2ZjNDM2NjA3MCIsInJvbGUiOiJBZG1pbmlzdHJhdG9yIiwiY29tcGFueUlkIjoiMiJ9.dtOr8aSxfl0j_stkMllr_QS0UfrMpoISVJThU7PPgtI
+
+###
+### Administrator responds and marks it Resolved.
+POST {{PAWS.api_HostAddress}}/api/customer-service/1/respond
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTAxNzUzNTQsImlhdCI6MTc5MDE3MTc1NCwibmJmIjoxNzkwMTcxNzU0LCJzdWIiOiIxIiwibmFtZSI6IkZpcnN0IEFkbWluIiwiZW1haWwiOiJhZG1pbkBwYXdzYi5leGFtcGxlLmNvbSIsImp0aSI6ImM1N2UzNjgzLTdiNWQtNDE2Ny04NWJkLTY1Y2ZjNDM2NjA3MCIsInJvbGUiOiJBZG1pbmlzdHJhdG9yIiwiY29tcGFueUlkIjoiMiJ9.dtOr8aSxfl0j_stkMllr_QS0UfrMpoISVJThU7PPgtI
+Content-Type: application/json
+
+{
+  "response": "Apologies for the delay. Your application is now under review.",
+  "status": "Resolved"
+}
+
+###
+
+### ===== Customer Retention: quick check =====
+### Fresh Administrator login.
+POST {{PAWS.api_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "companyCode": "PAWS-B",
+  "email": "admin@pawsb.example.com",
+  "password": "Bootstrap-Test-123!"
+}
+
+###
+### List all Adopters with retention status. Should show Test Adopter B (and C), all "Not Scheduled".
+GET {{PAWS.api_HostAddress}}/api/customer-retention
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTAxNzYxMjcsImlhdCI6MTc5MDE3MjUyNywibmJmIjoxNzkwMTcyNTI3LCJzdWIiOiIxIiwibmFtZSI6IkZpcnN0IEFkbWluIiwiZW1haWwiOiJhZG1pbkBwYXdzYi5leGFtcGxlLmNvbSIsImp0aSI6IjgwMWMwYzAxLTYwZjEtNDVhMi1iZDg3LTJmNDcxZDJmNWQ3MSIsInJvbGUiOiJBZG1pbmlzdHJhdG9yIiwiY29tcGFueUlkIjoiMiJ9.HNnPA8LOoF1tm5nI-pv_aSWQlLj-opz2z9oBoflWDiA
+
+###
+### Save a follow-up note with a date 3 days from now (should become "Due Soon").
+PUT {{PAWS.api_HostAddress}}/api/customer-retention/6
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTAxNzYxMjcsImlhdCI6MTc5MDE3MjUyNywibmJmIjoxNzkwMTcyNTI3LCJzdWIiOiIxIiwibmFtZSI6IkZpcnN0IEFkbWluIiwiZW1haWwiOiJhZG1pbkBwYXdzYi5leGFtcGxlLmNvbSIsImp0aSI6IjgwMWMwYzAxLTYwZjEtNDVhMi1iZDg3LTJmNDcxZDJmNWQ3MSIsInJvbGUiOiJBZG1pbmlzdHJhdG9yIiwiY29tcGFueUlkIjoiMiJ9.HNnPA8LOoF1tm5nI-pv_aSWQlLj-opz2z9oBoflWDiA
+Content-Type: application/json
+
+{
+  "notes": "Called to check in about the adoption process. Very engaged customer.",
+  "nextFollowUpDate": "2026-09-26"
+}
+
+###
+### Confirm Adopter B now shows "Due Soon" with notes and lastContactedByName filled in.
+GET {{PAWS.api_HostAddress}}/api/customer-retention/6
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTAxNzYxMjcsImlhdCI6MTc5MDE3MjUyNywibmJmIjoxNzkwMTcyNTI3LCJzdWIiOiIxIiwibmFtZSI6IkZpcnN0IEFkbWluIiwiZW1haWwiOiJhZG1pbkBwYXdzYi5leGFtcGxlLmNvbSIsImp0aSI6IjgwMWMwYzAxLTYwZjEtNDVhMi1iZDg3LTJmNDcxZDJmNWQ3MSIsInJvbGUiOiJBZG1pbmlzdHJhdG9yIiwiY29tcGFueUlkIjoiMiJ9.HNnPA8LOoF1tm5nI-pv_aSWQlLj-opz2z9oBoflWDiA
+
+###
+### ===== BI/KPIs: quick check =====
+### Fresh Administrator login.
+POST {{PAWS.api_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "companyCode": "PAWS-B",
+  "email": "admin@pawsb.example.com",
+  "password": "Bootstrap-Test-123!"
+}
+
+###
+### Get the full BI summary.
+GET {{PAWS.api_HostAddress}}/api/reports/bi-summary
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTAxNzY4MTUsImlhdCI6MTc5MDE3MzIxNSwibmJmIjoxNzkwMTczMjE1LCJzdWIiOiIxIiwibmFtZSI6IkZpcnN0IEFkbWluIiwiZW1haWwiOiJhZG1pbkBwYXdzYi5leGFtcGxlLmNvbSIsImp0aSI6IjU2NmFkMzc0LTMxY2YtNDk0ZC04YzM0LWYzY2E0NWI3NjBkZSIsInJvbGUiOiJBZG1pbmlzdHJhdG9yIiwiY29tcGFueUlkIjoiMiJ9.pNyo8O79qESxIenGs4ki2BRCgB3Z23f8m_Q0-BGSVTc
+
+###
+
+### ===== TEMPORARY: seed 200 demo records =====
+POST {{PAWS.api_HostAddress}}/api/debug-seed/demo-data
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTAxNzg4NzAsImlhdCI6MTc5MDE3NTI3MCwibmJmIjoxNzkwMTc1MjcwLCJzdWIiOiIxIiwibmFtZSI6IkZpcnN0IEFkbWluIiwiZW1haWwiOiJhZG1pbkBwYXdzYi5leGFtcGxlLmNvbSIsImp0aSI6Ijc0ZmNjMzMwLWM0MjEtNDEwNS1hZDk3LTAyZmRjNTQ5ODc0ZSIsInJvbGUiOiJBZG1pbmlzdHJhdG9yIiwiY29tcGFueUlkIjoiMiJ9.z0KwtSf2vc7YbICwRQyncywsHGmQwiolf-JsMNKEqUo
+
+###
+### Re-run full seed (adds more data + payments this time).
+POST {{PAWS.api_HostAddress}}/api/debug-seed/demo-data
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTAxODM2NjUsImlhdCI6MTc5MDE4MDA2NSwibmJmIjoxNzkwMTgwMDY1LCJzdWIiOiIxIiwibmFtZSI6IkZpcnN0IEFkbWluIiwiZW1haWwiOiJhZG1pbkBwYXdzYi5leGFtcGxlLmNvbSIsImp0aSI6IjZlYzAyOWJiLWZmMjgtNGQzMC04ZWNjLTlkYjM4OTkwMGFlOSIsInJvbGUiOiJBZG1pbmlzdHJhdG9yIiwiY29tcGFueUlkIjoiMiJ9.Z4K42GFrlxbkGPQ-AISdCrhmBOMeNROJwmNao_xpkUs
+
+###
+
+### Direct check: does the API's own summary show the income correctly?
+POST {{PAWS.api_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "companyCode": "PAWS-B",
+  "email": "admin@pawsb.example.com",
+  "password": "Bootstrap-Test-123!"
+}
+
+###
+
+### Get BI summary directly.
+GET {{PAWS.api_HostAddress}}/api/reports/bi-summary
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTAxOTM3NDYsImlhdCI6MTc5MDE5MDE0NiwibmJmIjoxNzkwMTkwMTQ2LCJzdWIiOiIxIiwibmFtZSI6IkZpcnN0IEFkbWluIiwiZW1haWwiOiJhZG1pbkBwYXdzYi5leGFtcGxlLmNvbSIsImp0aSI6IjliODgzNTliLWQ1YzUtNDNkMi05Y2JlLTdhNjI5MWY2OWQ0MiIsInJvbGUiOiJBZG1pbmlzdHJhdG9yIiwiY29tcGFueUlkIjoiMiJ9.8IXCyM6ROOLFoj9BzuuUffkXT_EMG37E9eKjEodk55Y
+
+###
+### Retry: get BI summary with the freshly-restarted API.
+GET {{PAWS.api_HostAddress}}/api/reports/bi-summary
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTAxOTQxMDMsImlhdCI6MTc5MDE5MDUwMywibmJmIjoxNzkwMTkwNTAzLCJzdWIiOiIxIiwibmFtZSI6IkZpcnN0IEFkbWluIiwiZW1haWwiOiJhZG1pbkBwYXdzYi5leGFtcGxlLmNvbSIsImp0aSI6IjNhZmI3MWM1LWM0ODItNGM3Yi1hYmUxLTFmNjVjZWE1MmM1MCIsInJvbGUiOiJBZG1pbmlzdHJhdG9yIiwiY29tcGFueUlkIjoiMiJ9.GNnIu0GGnFyt-n3lQhiAsuuxW0rvrNNCnlrNOKwKp0U
+
+###
+### Fresh Staff login.
+POST {{PAWS.api_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "companyCode": "PAWS-B",
+  "email": "angelotapz@paws.com",
+  "password": "Angelo2801@"
+}
+
+###
+### Confirm the API itself blocks Staff from reports (not just the menu).
+POST {{PAWS.api_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "companyCode": "PAWS-B",
+  "email": "angelotapz@paws.com",
+  "password": "PASTE_STAFF_PASSWORD"
+}
+
+###
+
+### Should be 403 Forbidden now.
+GET {{PAWS.api_HostAddress}}/api/reports/bi-summary
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTAxOTUyMjUsImlhdCI6MTc5MDE5MTYyNSwibmJmIjoxNzkwMTkxNjI1LCJzdWIiOiI0IiwibmFtZSI6IkFuZ2VsbyBUYXBlcmxhIiwiZW1haWwiOiJhbmdlbG90YXB6QHBhd3MuY29tIiwianRpIjoiNjdlMjIzMmEtYzdiMi00NmI5LWIzNDEtNDE2YjI2NWNkZjQyIiwicm9sZSI6IlN0YWZmIiwiY29tcGFueUlkIjoiMiJ9.EnFwA7mnGj8Au2IyDh16zAxsVg5uHTWQ_S-FzFnn8jo
+
+###
+
+### ===== H1: Hardening Customer Service =====
+### Fresh Veterinarian login (PAWS-B).
+POST {{PAWS.api_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "companyCode": "PAWS-B",
+  "email": "AngeloManingo123@paws.com",
+  "password": "Angelo2801@"
+}
+
+###
+### Veterinarian tries to list customer service requests. Must be REFUSED (403).
+GET {{PAWS.api_HostAddress}}/api/customer-service
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTA0NDMxMTMsImlhdCI6MTc5MDQzOTUxMywibmJmIjoxNzkwNDM5NTEzLCJzdWIiOiI1IiwibmFtZSI6IkFuZ2VsbyBNYW5pbmdvIiwiZW1haWwiOiJBbmdlbG9NYW5pbmdvMTIzQHBhd3MuY29tIiwianRpIjoiMzdlZDE1YTctZDk5Yy00ZmUzLTk2OWYtZTFlZWRmYWYwZmRjIiwicm9sZSI6IlZldGVyaW5hcmlhbiIsImNvbXBhbnlJZCI6IjIifQ.uuyCHNZ8Df72xwNgzlSFXfI4jyTXJXs6mOGtKzyq9bE
+
+###
+### Fresh Adopter C login.
+POST {{PAWS.api_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "companyCode": "PAWS-B",
+  "email": "adopter.c@pawsb.example.com",
+  "password": "AdopterC-Test-123!"
+}
+
+###
+### Adopter C tries to view Adopter B's request directly by ID. Must be REFUSED (403).
+GET {{PAWS.api_HostAddress}}/api/customer-service/1
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTA0NDMxNjIsImlhdCI6MTc5MDQzOTU2MiwibmJmIjoxNzkwNDM5NTYyLCJzdWIiOiI3IiwibmFtZSI6IlRlc3QgQWRvcHRlciBDIiwiZW1haWwiOiJhZG9wdGVyLmNAcGF3c2IuZXhhbXBsZS5jb20iLCJqdGkiOiIzNDU3Yzg4ZC1jZDVjLTQwMGMtYWVjNC0wNjIxNWUwMzk1YTgiLCJyb2xlIjoiQWRvcHRlciIsImNvbXBhbnlJZCI6IjIifQ.GF3zSgpr2QbNwlADFmvFNzZK9NL0eE3_c4ujjLdvMgY
+
+###
+### Adopter C lists their own requests. Should NOT include Adopter B's Complaint (id 1).
+GET {{PAWS.api_HostAddress}}/api/customer-service
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTA0NDMxNjIsImlhdCI6MTc5MDQzOTU2MiwibmJmIjoxNzkwNDM5NTYyLCJzdWIiOiI3IiwibmFtZSI6IlRlc3QgQWRvcHRlciBDIiwiZW1haWwiOiJhZG9wdGVyLmNAcGF3c2IuZXhhbXBsZS5jb20iLCJqdGkiOiIzNDU3Yzg4ZC1jZDVjLTQwMGMtYWVjNC0wNjIxNWUwMzk1YTgiLCJyb2xlIjoiQWRvcHRlciIsImNvbXBhbnlJZCI6IjIifQ.GF3zSgpr2QbNwlADFmvFNzZK9NL0eE3_c4ujjLdvMgY
+
+###
+### Adopter B lists their own requests. Should show ONLY their own complaint (id 1), nothing from other adopters.
+POST {{PAWS.api_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "companyCode": "PAWS-B",
+  "email": "adopter.b@pawsb.example.com",
+  "password": "AdopterB-Test-123!"
+}
+
+###
+### Adopter B lists their requests.
+GET {{PAWS.api_HostAddress}}/api/customer-service
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTA0NDMyNjcsImlhdCI6MTc5MDQzOTY2NywibmJmIjoxNzkwNDM5NjY3LCJzdWIiOiI2IiwibmFtZSI6IlRlc3QgQWRvcHRlciBCIiwiZW1haWwiOiJhZG9wdGVyLmJAcGF3c2IuZXhhbXBsZS5jb20iLCJqdGkiOiJkMjA2MjNjMC02Njk5LTRhMzctODNlZC1mZWZiYzFmYzViZmQiLCJyb2xlIjoiQWRvcHRlciIsImNvbXBhbnlJZCI6IjIifQ.tMMQP6eB1nnw702t_59OHz39kJ9jplPbr84_QN93OIg
+
+###
+### Adopter B tries to submit with an INVALID type. Must be REFUSED (400).
+POST {{PAWS.api_HostAddress}}/api/customer-service
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTA0NDMyNjcsImlhdCI6MTc5MDQzOTY2NywibmJmIjoxNzkwNDM5NjY3LCJzdWIiOiI2IiwibmFtZSI6IlRlc3QgQWRvcHRlciBCIiwiZW1haWwiOiJhZG9wdGVyLmJAcGF3c2IuZXhhbXBsZS5jb20iLCJqdGkiOiJkMjA2MjNjMC02Njk5LTRhMzctODNlZC1mZWZiYzFmYzViZmQiLCJyb2xlIjoiQWRvcHRlciIsImNvbXBhbnlJZCI6IjIifQ.tMMQP6eB1nnw702t_59OHz39kJ9jplPbr84_QN93OIg
+Content-Type: application/json
+
+{
+  "type": "NotARealType",
+  "subject": "Testing bad type",
+  "message": "This should be rejected."
+}
+
+###
+### Fresh Administrator login.
+POST {{PAWS.api_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "companyCode": "PAWS-B",
+  "email": "admin@pawsb.example.com",
+  "password": "Bootstrap-Test-123!"
+}
+
+###
+### Administrator tries to respond with an INVALID status. Must be REFUSED (400).
+POST {{PAWS.api_HostAddress}}/api/customer-service/103/respond
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTA0NDMzNzYsImlhdCI6MTc5MDQzOTc3NiwibmJmIjoxNzkwNDM5Nzc2LCJzdWIiOiIxIiwibmFtZSI6IkZpcnN0IEFkbWluIiwiZW1haWwiOiJhZG1pbkBwYXdzYi5leGFtcGxlLmNvbSIsImp0aSI6ImViZWJjN2JhLTQzYTgtNDMyYi04NGFlLTkwMTcwYmQ0ZjVlMCIsInJvbGUiOiJBZG1pbmlzdHJhdG9yIiwiY29tcGFueUlkIjoiMiJ9.HBvVYE1sCsdo4RPIhbP39QeI7TS2qBc1EYAZ_phuOds
+Content-Type: application/json
+
+{
+  "response": "Testing a bad status value.",
+  "status": "SuperResolved"
+}
+
+###
+### Adopter B tries to respond to their OWN request directly. Must be REFUSED (403).
+POST {{PAWS.api_HostAddress}}/api/customer-service/103/respond
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTA0NDMyNjcsImlhdCI6MTc5MDQzOTY2NywibmJmIjoxNzkwNDM5NjY3LCJzdWIiOiI2IiwibmFtZSI6IlRlc3QgQWRvcHRlciBCIiwiZW1haWwiOiJhZG9wdGVyLmJAcGF3c2IuZXhhbXBsZS5jb20iLCJqdGkiOiJkMjA2MjNjMC02Njk5LTRhMzctODNlZC1mZWZiYzFmYzViZmQiLCJyb2xlIjoiQWRvcHRlciIsImNvbXBhbnlJZCI6IjIifQ.tMMQP6eB1nnw702t_59OHz39kJ9jplPbr84_QN93OIg
+Content-Type: application/json
+
+{
+  "response": "I am trying to respond to my own complaint.",
+  "status": "Resolved"
+}
+
+###
+### Adopter B tries to close their own request directly via /status. Must be REFUSED (403).
+POST {{PAWS.api_HostAddress}}/api/customer-service/103/status
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTA0NDMyNjcsImlhdCI6MTc5MDQzOTY2NywibmJmIjoxNzkwNDM5NjY3LCJzdWIiOiI2IiwibmFtZSI6IlRlc3QgQWRvcHRlciBCIiwiZW1haWwiOiJhZG9wdGVyLmJAcGF3c2IuZXhhbXBsZS5jb20iLCJqdGkiOiJkMjA2MjNjMC02Njk5LTRhMzctODNlZC1mZWZiYzFmYzViZmQiLCJyb2xlIjoiQWRvcHRlciIsImNvbXBhbnlJZCI6IjIifQ.tMMQP6eB1nnw702t_59OHz39kJ9jplPbr84_QN93OIg
+Content-Type: application/json
+
+{
+  "status": "Closed"
+}
+
+###
+### Adopter B tries to list customer retention records. Must be REFUSED (403).
+GET {{PAWS.api_HostAddress}}/api/customer-retention
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTA0NDMyNjcsImlhdCI6MTc5MDQzOTY2NywibmJmIjoxNzkwNDM5NjY3LCJzdWIiOiI2IiwibmFtZSI6IlRlc3QgQWRvcHRlciBCIiwiZW1haWwiOiJhZG9wdGVyLmJAcGF3c2IuZXhhbXBsZS5jb20iLCJqdGkiOiJkMjA2MjNjMC02Njk5LTRhMzctODNlZC1mZWZiYzFmYzViZmQiLCJyb2xlIjoiQWRvcHRlciIsImNvbXBhbnlJZCI6IjIifQ.tMMQP6eB1nnw702t_59OHz39kJ9jplPbr84_QN93OIg
+
+###
+### Veterinarian tries to list customer retention records. Must be REFUSED (403).
+GET {{PAWS.api_HostAddress}}/api/customer-retention
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTA0NDMxMTMsImlhdCI6MTc5MDQzOTUxMywibmJmIjoxNzkwNDM5NTEzLCJzdWIiOiI1IiwibmFtZSI6IkFuZ2VsbyBNYW5pbmdvIiwiZW1haWwiOiJBbmdlbG9NYW5pbmdvMTIzQHBhd3MuY29tIiwianRpIjoiMzdlZDE1YTctZDk5Yy00ZmUzLTk2OWYtZTFlZWRmYWYwZmRjIiwicm9sZSI6IlZldGVyaW5hcmlhbiIsImNvbXBhbnlJZCI6IjIifQ.uuyCHNZ8Df72xwNgzlSFXfI4jyTXJXs6mOGtKzyq9bE
+
+###
+### Administrator tries to save retention notes for THEMSELVES (a non-Adopter). What happens?
+POST {{PAWS.api_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "companyCode": "PAWS-B",
+  "email": "admin@pawsb.example.com",
+  "password": "Bootstrap-Test-123!"
+}
+
+###
+### Try saving retention notes for userId 1 (the Administrator, not an Adopter).
+PUT {{PAWS.api_HostAddress}}/api/customer-retention/1
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTA0NDM2NzgsImlhdCI6MTc5MDQ0MDA3OCwibmJmIjoxNzkwNDQwMDc4LCJzdWIiOiIxIiwibmFtZSI6IkZpcnN0IEFkbWluIiwiZW1haWwiOiJhZG1pbkBwYXdzYi5leGFtcGxlLmNvbSIsImp0aSI6ImFjNDJiZDU2LThhMDYtNDFmOS1hMWJmLThkYWY2Y2ZjNjFhZSIsInJvbGUiOiJBZG1pbmlzdHJhdG9yIiwiY29tcGFueUlkIjoiMiJ9.vFnVoFX03NrbndMU8vcI0pj91UM4pg_7gl_fL_7LfdU
+Content-Type: application/json
+
+{
+  "notes": "Testing whether this incorrectly allows retention data for a non-Adopter.",
+  "nextFollowUpDate": "2026-10-01"
+}
+
+###
+### Check GetAll() — does the bogus Administrator-retention row show up here?
+GET {{PAWS.api_HostAddress}}/api/customer-retention
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTA0NDM2NzgsImlhdCI6MTc5MDQ0MDA3OCwibmJmIjoxNzkwNDQwMDc4LCJzdWIiOiIxIiwibmFtZSI6IkZpcnN0IEFkbWluIiwiZW1haWwiOiJhZG1pbkBwYXdzYi5leGFtcGxlLmNvbSIsImp0aSI6ImFjNDJiZDU2LThhMDYtNDFmOS1hMWJmLThkYWY2Y2ZjNjFhZSIsInJvbGUiOiJBZG1pbmlzdHJhdG9yIiwiY29tcGFueUlkIjoiMiJ9.vFnVoFX03NrbndMU8vcI0pj91UM4pg_7gl_fL_7LfdU
+
+### Retry: Administrator tries to save retention notes for THEMSELVES (a non-Adopter). Must now be REFUSED.
+PUT {{PAWS.api_HostAddress}}/api/customer-retention/1
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTA0NDQzMTUsImlhdCI6MTc5MDQ0MDcxNSwibmJmIjoxNzkwNDQwNzE1LCJzdWIiOiIxIiwibmFtZSI6IkZpcnN0IEFkbWluIiwiZW1haWwiOiJhZG1pbkBwYXdzYi5leGFtcGxlLmNvbSIsImp0aSI6IjUzYzE5MTNlLTE0MTktNDE0NC1hMWU3LTZjZWQzMDhhOTdhNyIsInJvbGUiOiJBZG1pbmlzdHJhdG9yIiwiY29tcGFueUlkIjoiMiJ9.IEUvW5Un_SD0Qd3i1Xo-UEQrgYukgRGsHQVYyhnR0K8
+Content-Type: application/json
+
+{
+  "notes": "Testing whether this is now correctly rejected.",
+  "nextFollowUpDate": "2026-10-01"
+}
+
+###
+
+### ===== H3: Hardening Payments =====
+### Fresh Adopter B login.
+POST {{PAWS.api_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "companyCode": "PAWS-B",
+  "email": "adopter.b@pawsb.example.com",
+  "password": "AdopterB-Test-123!"
+}
+
+###
+### Adopter B tries to list payments. Must be REFUSED (403).
+GET {{PAWS.api_HostAddress}}/api/payments
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTA0NDQzOTgsImlhdCI6MTc5MDQ0MDc5OCwibmJmIjoxNzkwNDQwNzk4LCJzdWIiOiI2IiwibmFtZSI6IlRlc3QgQWRvcHRlciBCIiwiZW1haWwiOiJhZG9wdGVyLmJAcGF3c2IuZXhhbXBsZS5jb20iLCJqdGkiOiI0YTVhNmQwYi01ZGM1LTQ5MTQtOWExNC00NWNkOTRiOTUzYmQiLCJyb2xlIjoiQWRvcHRlciIsImNvbXBhbnlJZCI6IjIifQ.9CeMHhq5dEg4ctYe9VAQjZpOXbjFOeQ2xzB-SIc4h7w
+
+###
+### Fresh Veterinarian login.
+POST {{PAWS.api_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "companyCode": "PAWS-B",
+  "email": "AngeloManingo123@paws.com",
+  "password": "Angelo2801@"
+}
+
+###
+### Veterinarian tries to list payments. Must be REFUSED (403).
+GET {{PAWS.api_HostAddress}}/api/payments
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTA0NDQ0MzksImlhdCI6MTc5MDQ0MDgzOSwibmJmIjoxNzkwNDQwODM5LCJzdWIiOiI1IiwibmFtZSI6IkFuZ2VsbyBNYW5pbmdvIiwiZW1haWwiOiJBbmdlbG9NYW5pbmdvMTIzQHBhd3MuY29tIiwianRpIjoiZmYwZDE4OTktNjUzNy00ZWEzLTgwMjYtOTAwNDc3MzE5YjdkIiwicm9sZSI6IlZldGVyaW5hcmlhbiIsImNvbXBhbnlJZCI6IjIifQ.DpFWtt3fiO0fY2xY03lzGY3WSz0i2b7nyFWdiATgy-A
+
+###
+
+### Fresh Administrator login.
+POST {{PAWS.api_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "companyCode": "PAWS-B",
+  "email": "admin@pawsb.example.com",
+  "password": "Bootstrap-Test-123!"
+}
+
+###
+### Try creating a payment with an INVALID type. Must be REFUSED (400).
+POST {{PAWS.api_HostAddress}}/api/payments
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTA0NDQ0ODAsImlhdCI6MTc5MDQ0MDg4MCwibmJmIjoxNzkwNDQwODgwLCJzdWIiOiIxIiwibmFtZSI6IkZpcnN0IEFkbWluIiwiZW1haWwiOiJhZG1pbkBwYXdzYi5leGFtcGxlLmNvbSIsImp0aSI6ImNjZTlkODllLTM0ODktNDg4Zi1hNTE0LWU5ZmQ0MGVmYzJjMSIsInJvbGUiOiJBZG1pbmlzdHJhdG9yIiwiY29tcGFueUlkIjoiMiJ9.czrItdZGvJaHdTrZ7ocAdVFbavzTtFZIjtVIpkp0PnA
+Content-Type: application/json
+
+{
+  "adoptionApplicationId": 1,
+  "type": "NotARealType",
+  "amount": 500,
+  "method": "Cash"
+}
+
+###
+### Try creating a payment for an application that doesn't exist. Must be REFUSED (400).
+POST {{PAWS.api_HostAddress}}/api/payments
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTA0NDQ0ODAsImlhdCI6MTc5MDQ0MDg4MCwibmJmIjoxNzkwNDQwODgwLCJzdWIiOiIxIiwibmFtZSI6IkZpcnN0IEFkbWluIiwiZW1haWwiOiJhZG1pbkBwYXdzYi5leGFtcGxlLmNvbSIsImp0aSI6ImNjZTlkODllLTM0ODktNDg4Zi1hNTE0LWU5ZmQ0MGVmYzJjMSIsInJvbGUiOiJBZG1pbmlzdHJhdG9yIiwiY29tcGFueUlkIjoiMiJ9.czrItdZGvJaHdTrZ7ocAdVFbavzTtFZIjtVIpkp0PnA
+Content-Type: application/json
+
+{
+  "adoptionApplicationId": 999999,
+  "type": "Adoption Fee",
+  "amount": 500,
+  "method": "Cash"
+}
+
+###
+### Try creating a payment with a NEGATIVE amount. Does it get accepted?
+POST {{PAWS.api_HostAddress}}/api/payments
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTA0NDQ0ODAsImlhdCI6MTc5MDQ0MDg4MCwibmJmIjoxNzkwNDQwODgwLCJzdWIiOiIxIiwibmFtZSI6IkZpcnN0IEFkbWluIiwiZW1haWwiOiJhZG1pbkBwYXdzYi5leGFtcGxlLmNvbSIsImp0aSI6ImNjZTlkODllLTM0ODktNDg4Zi1hNTE0LWU5ZmQ0MGVmYzJjMSIsInJvbGUiOiJBZG1pbmlzdHJhdG9yIiwiY29tcGFueUlkIjoiMiJ9.czrItdZGvJaHdTrZ7ocAdVFbavzTtFZIjtVIpkp0PnA
+Content-Type: application/json
+
+{
+  "adoptionApplicationId": 1,
+  "type": "Adoption Fee",
+  "amount": -500,
+  "method": "Cash"
+}
+
+###
+
+### Fresh Administrator login.
+POST {{PAWS.api_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "companyCode": "PAWS-B",
+  "email": "admin@pawsb.example.com",
+  "password": "Bootstrap-Test-123!"
+}
+
+###
+
+### Retry: negative amount. Must now be REFUSED (400).
+POST {{PAWS.api_HostAddress}}/api/payments
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTA0NDQ2ODEsImlhdCI6MTc5MDQ0MTA4MSwibmJmIjoxNzkwNDQxMDgxLCJzdWIiOiIxIiwibmFtZSI6IkZpcnN0IEFkbWluIiwiZW1haWwiOiJhZG1pbkBwYXdzYi5leGFtcGxlLmNvbSIsImp0aSI6IjRjOTIzMGFhLWNiYjctNDJkNy1iNmJjLTRhYWQwNzQ3MWM2YyIsInJvbGUiOiJBZG1pbmlzdHJhdG9yIiwiY29tcGFueUlkIjoiMiJ9.kDqpLSg-GLYxzvUjLQV8sj1hcSjLF6mNUtXAw11YhtM
+Content-Type: application/json
+
+{
+  "adoptionApplicationId": 1,
+  "type": "Adoption Fee",
+  "amount": -500,
+  "method": "Cash"
+}
+
+###
+
+### Fresh Adopter B login.
+POST {{PAWS.api_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "companyCode": "PAWS-B",
+  "email": "adopter.b@pawsb.example.com",
+  "password": "AdopterB-Test-123!"
+}
+
+###
+
+### Adopter tries to access BI summary. Must be REFUSED (403).
+GET {{PAWS.api_HostAddress}}/api/reports/bi-summary
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTA0NDQ3MzIsImlhdCI6MTc5MDQ0MTEzMiwibmJmIjoxNzkwNDQxMTMyLCJzdWIiOiI2IiwibmFtZSI6IlRlc3QgQWRvcHRlciBCIiwiZW1haWwiOiJhZG9wdGVyLmJAcGF3c2IuZXhhbXBsZS5jb20iLCJqdGkiOiI1OWEwMTZiMy0wZTRhLTQ5NjgtYjNhNC1jOWFlOWM3YWFjZGYiLCJyb2xlIjoiQWRvcHRlciIsImNvbXBhbnlJZCI6IjIifQ.nkIo5I5RzCJvTblWnDwlT7M8hX-f8pqqptLJx2AJBNk
+
+###
+
+### Fresh Veterinarian login.
+POST {{PAWS.api_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "companyCode": "PAWS-B",
+  "email": "AngeloManingo123@paws.com",
+  "password": "Angelo2801@"
+}
+
+###
+
+### Veterinarian tries to access BI summary. Must be REFUSED (403).
+GET {{PAWS.api_HostAddress}}/api/reports/bi-summary
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTA0NDQ3OTUsImlhdCI6MTc5MDQ0MTE5NSwibmJmIjoxNzkwNDQxMTk1LCJzdWIiOiI1IiwibmFtZSI6IkFuZ2VsbyBNYW5pbmdvIiwiZW1haWwiOiJBbmdlbG9NYW5pbmdvMTIzQHBhd3MuY29tIiwianRpIjoiMjdhYTAxOGMtNmU3Yy00N2NhLTg2NjEtMTBjNTdjZjgzMTA1Iiwicm9sZSI6IlZldGVyaW5hcmlhbiIsImNvbXBhbnlJZCI6IjIifQ.lGwZmXezJAbRFQHIUHRi_xBRkk7uzh5Ct1pHmBgbxNk
+
+###
+
+### ===== Phase 18: Medical & Vaccination Records =====
+### Fresh Administrator login.
+POST {{PAWS.api_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "companyCode": "PAWS-B",
+  "email": "admin@pawsb.example.com",
+  "password": "Bootstrap-Test-123!"
+}
+
+###
+
+### Check Buddy's current state.
+GET {{PAWS.api_HostAddress}}/api/pets/1
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTA0NDU3MjYsImlhdCI6MTc5MDQ0MjEyNiwibmJmIjoxNzkwNDQyMTI2LCJzdWIiOiIxIiwibmFtZSI6IkZpcnN0IEFkbWluIiwiZW1haWwiOiJhZG1pbkBwYXdzYi5leGFtcGxlLmNvbSIsImp0aSI6IjBlMzhiZjllLTUzM2YtNDM4Yi05ODIxLWYyNWNmYjlmNGVkZSIsInJvbGUiOiJBZG1pbmlzdHJhdG9yIiwiY29tcGFueUlkIjoiMiJ9.yGjv9x-0wRg82l8mJEOpKyvjbwdPlu3_Zlwbtj33iVA
+
+###
+
+### Fresh Veterinarian login.
+POST {{PAWS.api_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "companyCode": "PAWS-B",
+  "email": "AngeloManingo123@paws.com",
+  "password": "Angelo2801@"
+}
+
+###
+
+### Vet creates a medical record for Buddy.
+POST {{PAWS.api_HostAddress}}/api/medical-records
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTA0NDU3NjgsImlhdCI6MTc5MDQ0MjE2OCwibmJmIjoxNzkwNDQyMTY4LCJzdWIiOiI1IiwibmFtZSI6IkFuZ2VsbyBNYW5pbmdvIiwiZW1haWwiOiJBbmdlbG9NYW5pbmdvMTIzQHBhd3MuY29tIiwianRpIjoiNDAyYmJiNmEtNzQ0Yi00ZGY5LWFhZTEtNzg4OTg4YTM0MmZiIiwicm9sZSI6IlZldGVyaW5hcmlhbiIsImNvbXBhbnlJZCI6IjIifQ.pkkbigoGL_XmvscGZlXP5vwvJ5lSfkUOOBWRIyckhGM
+Content-Type: application/json
+
+{
+  "petId": 1,
+  "examinationDate": "2026-09-24",
+  "diagnosis": "Healthy, routine checkup",
+  "symptoms": "None",
+  "treatment": "None needed",
+  "weightAtExam": 24.5,
+  "healthStatus": "Excellent",
+  "fitForAdoption": true,
+  "notes": "Buddy is in great shape for adoption.",
+  "nextCheckupDate": "2027-03-24"
+}
+
+###
+### Administrator lists medical records for Buddy. Should see the record just created.
+GET {{PAWS.api_HostAddress}}/api/medical-records?petId=1
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTA0NDU4MDgsImlhdCI6MTc5MDQ0MjIwOCwibmJmIjoxNzkwNDQyMjA4LCJzdWIiOiIxIiwibmFtZSI6IkZpcnN0IEFkbWluIiwiZW1haWwiOiJhZG1pbkBwYXdzYi5leGFtcGxlLmNvbSIsImp0aSI6Ijk5OTJhMDdhLTI3M2UtNDVjZi04MTI4LWRiYjVhZGQwOTExYyIsInJvbGUiOiJBZG1pbmlzdHJhdG9yIiwiY29tcGFueUlkIjoiMiJ9.W1sTc7pG6YTi8sEspZ5Fl6ibNCiVfGuhirMK-AC3F5k
+
+###
+### Administrator tries to CREATE a medical record. Must be REFUSED (403).
+POST {{PAWS.api_HostAddress}}/api/medical-records
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTA0NDU4MDgsImlhdCI6MTc5MDQ0MjIwOCwibmJmIjoxNzkwNDQyMjA4LCJzdWIiOiIxIiwibmFtZSI6IkZpcnN0IEFkbWluIiwiZW1haWwiOiJhZG1pbkBwYXdzYi5leGFtcGxlLmNvbSIsImp0aSI6Ijk5OTJhMDdhLTI3M2UtNDVjZi04MTI4LWRiYjVhZGQwOTExYyIsInJvbGUiOiJBZG1pbmlzdHJhdG9yIiwiY29tcGFueUlkIjoiMiJ9.W1sTc7pG6YTi8sEspZ5Fl6ibNCiVfGuhirMK-AC3F5k
+Content-Type: application/json
+
+{
+  "petId": 1,
+  "examinationDate": "2026-09-24",
+  "healthStatus": "Good"
+}
+
+###
+### Fresh Adopter B login.
+POST {{PAWS.api_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "companyCode": "PAWS-B",
+  "email": "adopter.b@pawsb.example.com",
+  "password": "AdopterB-Test-123!"
+}
+
+###
+
+### Adopter B views Buddy's medical records. Should SUCCEED (they have an Approved application for Buddy).
+GET {{PAWS.api_HostAddress}}/api/medical-records?petId=1
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTA0NDU5MTAsImlhdCI6MTc5MDQ0MjMxMCwibmJmIjoxNzkwNDQyMzEwLCJzdWIiOiI2IiwibmFtZSI6IlRlc3QgQWRvcHRlciBCIiwiZW1haWwiOiJhZG9wdGVyLmJAcGF3c2IuZXhhbXBsZS5jb20iLCJqdGkiOiJhODBjMWM0ZS0xZjA1LTQyZTMtYTg3OS0xYzM5YzI3ZDRlNWQiLCJyb2xlIjoiQWRvcHRlciIsImNvbXBhbnlJZCI6IjIifQ.xSP34gNIBHumBjQBo2FchWasWGjrJ3aaikD2tgs8ae4
+
+###
+### Fresh Adopter C login.
+POST {{PAWS.api_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "companyCode": "PAWS-B",
+  "email": "adopter.c@pawsb.example.com",
+  "password": "AdopterC-Test-123!"
+}
+
+###
+
+### Adopter C tries to view Buddy's medical records. Should be EMPTY (they never adopted Buddy).
+GET {{PAWS.api_HostAddress}}/api/medical-records?petId=1
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTA0NDU5NTQsImlhdCI6MTc5MDQ0MjM1NCwibmJmIjoxNzkwNDQyMzU0LCJzdWIiOiI3IiwibmFtZSI6IlRlc3QgQWRvcHRlciBDIiwiZW1haWwiOiJhZG9wdGVyLmNAcGF3c2IuZXhhbXBsZS5jb20iLCJqdGkiOiI4MjJiNTg3NC02MjIwLTQ1Y2YtYTA3Ny03MjQ1ZTEzYTIzNjAiLCJyb2xlIjoiQWRvcHRlciIsImNvbXBhbnlJZCI6IjIifQ.IsBeNgb4lkISTPv0oKyvbi-y60yeI3FhlFHnQN7m0o4
+
+###
+### Adopter C tries to view the specific medical record by ID directly. Must be REFUSED (403).
+GET {{PAWS.api_HostAddress}}/api/medical-records/1
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTA0NDU5NTQsImlhdCI6MTc5MDQ0MjM1NCwibmJmIjoxNzkwNDQyMzU0LCJzdWIiOiI3IiwibmFtZSI6IlRlc3QgQWRvcHRlciBDIiwiZW1haWwiOiJhZG9wdGVyLmNAcGF3c2IuZXhhbXBsZS5jb20iLCJqdGkiOiI4MjJiNTg3NC02MjIwLTQ1Y2YtYTA3Ny03MjQ1ZTEzYTIzNjAiLCJyb2xlIjoiQWRvcHRlciIsImNvbXBhbnlJZCI6IjIifQ.IsBeNgb4lkISTPv0oKyvbi-y60yeI3FhlFHnQN7m0o4
+### Fresh Veterinarian login.
+POST {{PAWS.api_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "companyCode": "PAWS-B",
+  "email": "AngeloManingo123@paws.com",
+  "password": "Angelo2801@"
+}
+
+###
+
+### Vet tries an INVALID health status. Must be REFUSED (400).
+POST {{PAWS.api_HostAddress}}/api/medical-records
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTA0NDYwMjMsImlhdCI6MTc5MDQ0MjQyMywibmJmIjoxNzkwNDQyNDIzLCJzdWIiOiI1IiwibmFtZSI6IkFuZ2VsbyBNYW5pbmdvIiwiZW1haWwiOiJBbmdlbG9NYW5pbmdvMTIzQHBhd3MuY29tIiwianRpIjoiZDA5NDc4NmItY2EyMS00MTAyLWEwODktNWZkNThjZmU0M2M4Iiwicm9sZSI6IlZldGVyaW5hcmlhbiIsImNvbXBhbnlJZCI6IjIifQ.Di09FsZBPZJIhkCbFY6bb6aA8JlOet_qv7qJFCDncRU
+Content-Type: application/json
+
+{
+  "petId": 1,
+  "examinationDate": "2026-09-24",
+  "healthStatus": "SuperHealthy"
+}
+
+###
+### Vet creates a vaccination record for Buddy, due date in the future.
+POST {{PAWS.api_HostAddress}}/api/vaccination-records
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTA0NDYwNjEsImlhdCI6MTc5MDQ0MjQ2MSwibmJmIjoxNzkwNDQyNDYxLCJzdWIiOiI1IiwibmFtZSI6IkFuZ2VsbyBNYW5pbmdvIiwiZW1haWwiOiJBbmdlbG9NYW5pbmdvMTIzQHBhd3MuY29tIiwianRpIjoiZjNiMTJmMDYtMDRiYi00NDQwLWIzOGMtMDU3MzMwMTk1OGE3Iiwicm9sZSI6IlZldGVyaW5hcmlhbiIsImNvbXBhbnlJZCI6IjIifQ.AyXItakeZ8XRkWNb_-I8iMlOyzl7BCIcrWQjrk-4dyM
+Content-Type: application/json
+
+{
+  "petId": 1,
+  "vaccineName": "Rabies Vaccine",
+  "manufacturer": "VetGuard",
+  "dateAdministered": "2026-09-24",
+  "nextDueDate": "2027-09-24",
+  "isBooster": false,
+  "notes": "First rabies shot."
+}
+
+###
+### Administrator views Buddy's vaccination records.
+POST {{PAWS.api_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "companyCode": "PAWS-B",
+  "email": "admin@pawsb.example.com",
+  "password": "Bootstrap-Test-123!"
+}
+
+###
+
+### List vaccination records for Buddy.
+GET {{PAWS.api_HostAddress}}/api/vaccination-records?petId=1
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTA0NDYwOTAsImlhdCI6MTc5MDQ0MjQ5MCwibmJmIjoxNzkwNDQyNDkwLCJzdWIiOiIxIiwibmFtZSI6IkZpcnN0IEFkbWluIiwiZW1haWwiOiJhZG1pbkBwYXdzYi5leGFtcGxlLmNvbSIsImp0aSI6IjAzMDdlNzhlLTIxYzQtNDBlYi1hZTRjLTdjZmJiMGQ0NjQ2MyIsInJvbGUiOiJBZG1pbmlzdHJhdG9yIiwiY29tcGFueUlkIjoiMiJ9.Daa4pWzG0RktTxwH-zXf6dnkxrjQiyNN-eaitbvhwtI
+
+###
+### Vet creates a SECOND vaccination for Buddy, with a due date already in the past.
+POST {{PAWS.api_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "companyCode": "PAWS-B",
+  "email": "AngeloManingo123@paws.com",
+  "password": "Angelo2801@"
+}
+
+###
+
+### Create a vaccination that's now overdue.
+POST {{PAWS.api_HostAddress}}/api/vaccination-records
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTA0NDYxMzUsImlhdCI6MTc5MDQ0MjUzNSwibmJmIjoxNzkwNDQyNTM1LCJzdWIiOiI1IiwibmFtZSI6IkFuZ2VsbyBNYW5pbmdvIiwiZW1haWwiOiJBbmdlbG9NYW5pbmdvMTIzQHBhd3MuY29tIiwianRpIjoiNTUwMmQ4M2ItYWYxZi00MjM4LWE1M2MtNDk0MWQ0ODQ1MTAwIiwicm9sZSI6IlZldGVyaW5hcmlhbiIsImNvbXBhbnlJZCI6IjIifQ.LfWlaV2w2Pjupl4oce127IMnd8z34zGKFa_Q5OrMXuE
+Content-Type: application/json
+
+{
+  "petId": 1,
+  "vaccineName": "Deworming Booster",
+  "dateAdministered": "2026-01-01",
+  "nextDueDate": "2026-06-01",
+  "isBooster": true
+}
+
+###
+### List Buddy's vaccinations again. The Deworming Booster should show dueStatus: "Overdue".
+GET {{PAWS.api_HostAddress}}/api/vaccination-records?petId=1
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTA0NDYxODAsImlhdCI6MTc5MDQ0MjU4MCwibmJmIjoxNzkwNDQyNTgwLCJzdWIiOiIxIiwibmFtZSI6IkZpcnN0IEFkbWluIiwiZW1haWwiOiJhZG1pbkBwYXdzYi5leGFtcGxlLmNvbSIsImp0aSI6IjIzM2QxNDNmLTRlMWUtNDFiNC04MDQwLTg2NmRhYTM3MDBmZCIsInJvbGUiOiJBZG1pbmlzdHJhdG9yIiwiY29tcGFueUlkIjoiMiJ9.smCXwhVzIMhxJRybduzGu5E1qYMdvoXWz2wHAXhyERo
+
+###
+### Fresh Adopter B login.
+POST {{PAWS.api_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "companyCode": "PAWS-B",
+  "email": "adopter.b@pawsb.example.com",
+  "password": "AdopterB-Test-123!"
+}
+
+###
+
+### Adopter B views Buddy's vaccinations. Should SUCCEED.
+GET {{PAWS.api_HostAddress}}/api/vaccination-records?petId=1
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTA0NDYyMjAsImlhdCI6MTc5MDQ0MjYyMCwibmJmIjoxNzkwNDQyNjIwLCJzdWIiOiI2IiwibmFtZSI6IlRlc3QgQWRvcHRlciBCIiwiZW1haWwiOiJhZG9wdGVyLmJAcGF3c2IuZXhhbXBsZS5jb20iLCJqdGkiOiIyNzU1ZDg2My0yZWVhLTRkODgtYTBhMi0wZjE0Y2QzOTBiNzMiLCJyb2xlIjoiQWRvcHRlciIsImNvbXBhbnlJZCI6IjIifQ.qvMckIuGCZJMWBtKf4i_M3deQNxIvLNRZqiDhpJV40k
+
+###
+### Fresh Adopter C login.
+POST {{PAWS.api_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "companyCode": "PAWS-B",
+  "email": "adopter.c@pawsb.example.com",
+  "password": "AdopterC-Test-123!"
+}
+
+###
+
+### Adopter C tries to view Buddy's vaccinations. Should be EMPTY.
+GET {{PAWS.api_HostAddress}}/api/vaccination-records?petId=1
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTA0NDYyNDgsImlhdCI6MTc5MDQ0MjY0OCwibmJmIjoxNzkwNDQyNjQ4LCJzdWIiOiI3IiwibmFtZSI6IlRlc3QgQWRvcHRlciBDIiwiZW1haWwiOiJhZG9wdGVyLmNAcGF3c2IuZXhhbXBsZS5jb20iLCJqdGkiOiIzNGE4OWE4Zi1jMDUxLTQzOTctYTEzNy0zNDQyMzk2YTJhZjIiLCJyb2xlIjoiQWRvcHRlciIsImNvbXBhbnlJZCI6IjIifQ.U3ngR4-tPgMGTxe-OEnF9716tok49ToWmhWHCn5XXRA
+
+###
+
+### ===== Verify payable-applications logic directly =====
+### Fresh Administrator login.
+POST {{PAWS.api_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "companyCode": "PAWS-B",
+  "email": "admin@pawsb.example.com",
+  "password": "Bootstrap-Test-123!"
+}
+
+###
+
+### Get the payable applications list.
+GET {{PAWS.api_HostAddress}}/api/payments/payable-applications
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTA1MTIyNTUsImlhdCI6MTc5MDUwODY1NSwibmJmIjoxNzkwNTA4NjU1LCJzdWIiOiIxIiwibmFtZSI6IkZpcnN0IEFkbWluIiwiZW1haWwiOiJhZG1pbkBwYXdzYi5leGFtcGxlLmNvbSIsImp0aSI6IjE0MmE0ZTJjLTJmZjctNDZkMS05MmU3LTUxZWU3MTE1ZTczYyIsInJvbGUiOiJBZG1pbmlzdHJhdG9yIiwiY29tcGFueUlkIjoiMiJ9.g_ePy_XaH-0eeAxjHujOqJVBQV3jNcSjydGBhnKsIwA
+
+###
+
+### ===== Phase 20: Notifications testing =====
+### Fresh Adopter B login.
+POST {{PAWS.api_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "companyCode": "PAWS-B",
+  "email": "adopter.b@pawsb.example.com",
+  "password": "AdopterB-Test-123!"
+}
+
+###
+
+### Submit a new Inquiry.
+POST {{PAWS.api_HostAddress}}/api/customer-service
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTA1MTM2OTIsImlhdCI6MTc5MDUxMDA5MiwibmJmIjoxNzkwNTEwMDkyLCJzdWIiOiI2IiwibmFtZSI6IlRlc3QgQWRvcHRlciBCIiwiZW1haWwiOiJhZG9wdGVyLmJAcGF3c2IuZXhhbXBsZS5jb20iLCJqdGkiOiIwY2M3NDE4OC0zNDYwLTQ5NzctYjY5OS00ZGIxYzVlYzQyMjMiLCJyb2xlIjoiQWRvcHRlciIsImNvbXBhbnlJZCI6IjIifQ.8A-T2GCupLwfZPnoRFMvuqZDb0gFoXmnT3PPHaAxZhY
+Content-Type: application/json
+
+{
+  "type": "Inquiry",
+  "subject": "Testing notifications",
+  "message": "Does this trigger a notification for staff?"
+}
+
+###
+
+### Fresh Administrator login.
+POST {{PAWS.api_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "companyCode": "PAWS-B",
+  "email": "admin@pawsb.example.com",
+  "password": "Bootstrap-Test-123!"
+}
+
+###
+
+### Check the Administrator's notifications.
+GET {{PAWS.api_HostAddress}}/api/notifications
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTA1MTM3MzMsImlhdCI6MTc5MDUxMDEzMywibmJmIjoxNzkwNTEwMTMzLCJzdWIiOiIxIiwibmFtZSI6IkZpcnN0IEFkbWluIiwiZW1haWwiOiJhZG1pbkBwYXdzYi5leGFtcGxlLmNvbSIsImp0aSI6IjY1OTk5MzE4LWNiMjItNDE1ZC1iNThlLTY3MDhjYzRkNGI4NiIsInJvbGUiOiJBZG1pbmlzdHJhdG9yIiwiY29tcGFueUlkIjoiMiJ9.c79us8u2Q6eSeymRQjdRgmMnH-7p48NVP7bYaGQNLrE
+
+###
+### Mark this notification as read.
+POST {{PAWS.api_HostAddress}}/api/notifications/1/read
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTA1MTM3MzMsImlhdCI6MTc5MDUxMDEzMywibmJmIjoxNzkwNTEwMTMzLCJzdWIiOiIxIiwibmFtZSI6IkZpcnN0IEFkbWluIiwiZW1haWwiOiJhZG1pbkBwYXdzYi5leGFtcGxlLmNvbSIsImp0aSI6IjY1OTk5MzE4LWNiMjItNDE1ZC1iNThlLTY3MDhjYzRkNGI4NiIsInJvbGUiOiJBZG1pbmlzdHJhdG9yIiwiY29tcGFueUlkIjoiMiJ9.c79us8u2Q6eSeymRQjdRgmMnH-7p48NVP7bYaGQNLrE
+
+###
+
+### Check unread count. Should now be 0.
+GET {{PAWS.api_HostAddress}}/api/notifications/unread-count
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTA1MTM3MzMsImlhdCI6MTc5MDUxMDEzMywibmJmIjoxNzkwNTEwMTMzLCJzdWIiOiIxIiwibmFtZSI6IkZpcnN0IEFkbWluIiwiZW1haWwiOiJhZG1pbkBwYXdzYi5leGFtcGxlLmNvbSIsImp0aSI6IjY1OTk5MzE4LWNiMjItNDE1ZC1iNThlLTY3MDhjYzRkNGI4NiIsInJvbGUiOiJBZG1pbmlzdHJhdG9yIiwiY29tcGFueUlkIjoiMiJ9.c79us8u2Q6eSeymRQjdRgmMnH-7p48NVP7bYaGQNLrE
+
+###
+
+### Administrator responds to Adopter B's inquiry.
+POST {{PAWS.api_HostAddress}}/api/customer-service/1/respond
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTA1MTM3MzMsImlhdCI6MTc5MDUxMDEzMywibmJmIjoxNzkwNTEwMTMzLCJzdWIiOiIxIiwibmFtZSI6IkZpcnN0IEFkbWluIiwiZW1haWwiOiJhZG1pbkBwYXdzYi5leGFtcGxlLmNvbSIsImp0aSI6IjY1OTk5MzE4LWNiMjItNDE1ZC1iNThlLTY3MDhjYzRkNGI4NiIsInJvbGUiOiJBZG1pbmlzdHJhdG9yIiwiY29tcGFueUlkIjoiMiJ9.c79us8u2Q6eSeymRQjdRgmMnH-7p48NVP7bYaGQNLrE
+Content-Type: application/json
+
+{
+  "response": "Thanks for reaching out, we'll follow up shortly.",
+  "status": "Resolved"
+}
+
+###
+### List Adopter B's own requests to find the new Inquiry's ID.
+POST {{PAWS.api_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "companyCode": "PAWS-B",
+  "email": "adopter.b@pawsb.example.com",
+  "password": "AdopterB-Test-123!"
+}
+
+###
+
+### List Adopter B's requests.
+GET {{PAWS.api_HostAddress}}/api/customer-service
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTA1MTM4MzksImlhdCI6MTc5MDUxMDIzOSwibmJmIjoxNzkwNTEwMjM5LCJzdWIiOiI2IiwibmFtZSI6IlRlc3QgQWRvcHRlciBCIiwiZW1haWwiOiJhZG9wdGVyLmJAcGF3c2IuZXhhbXBsZS5jb20iLCJqdGkiOiI3YTc2NGRiNi1iNjMxLTQ2M2MtOGM0ZS0zZmJjMTJmNTc2NWYiLCJyb2xlIjoiQWRvcHRlciIsImNvbXBhbnlJZCI6IjIifQ.2QN7uOIcXFHw16YL0trhMqzB198WiPavnv_feBOvjbo
+
+###
+
+
+### Fresh Administrator login.
+POST {{PAWS.api_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "companyCode": "PAWS-B",
+  "email": "admin@pawsb.example.com",
+  "password": "Bootstrap-Test-123!"
+}
+
+###
+
+### Respond to the correct Inquiry (id 104).
+POST {{PAWS.api_HostAddress}}/api/customer-service/104/respond
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTA1MTM3MzMsImlhdCI6MTc5MDUxMDEzMywibmJmIjoxNzkwNTEwMTMzLCJzdWIiOiIxIiwibmFtZSI6IkZpcnN0IEFkbWluIiwiZW1haWwiOiJhZG1pbkBwYXdzYi5leGFtcGxlLmNvbSIsImp0aSI6IjY1OTk5MzE4LWNiMjItNDE1ZC1iNThlLTY3MDhjYzRkNGI4NiIsInJvbGUiOiJBZG1pbmlzdHJhdG9yIiwiY29tcGFueUlkIjoiMiJ9.c79us8u2Q6eSeymRQjdRgmMnH-7p48NVP7bYaGQNLrE
+Content-Type: application/json
+
+{
+  "response": "Yes, this correctly triggers a notification.",
+  "status": "Resolved"
+}
+
+###
+
+### Fresh Adopter B login.
+POST {{PAWS.api_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "companyCode": "PAWS-B",
+  "email": "adopter.b@pawsb.example.com",
+  "password": "AdopterB-Test-123!"
+}
+
+###
+
+### Check Adopter B's notifications.
+GET {{PAWS.api_HostAddress}}/api/notifications
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTA1MTM5MTksImlhdCI6MTc5MDUxMDMxOSwibmJmIjoxNzkwNTEwMzE5LCJzdWIiOiI2IiwibmFtZSI6IlRlc3QgQWRvcHRlciBCIiwiZW1haWwiOiJhZG9wdGVyLmJAcGF3c2IuZXhhbXBsZS5jb20iLCJqdGkiOiJjYWQxMTQyNi00ZjBjLTRkNmQtODhmZS1iYmY5ZjVkODQxMTciLCJyb2xlIjoiQWRvcHRlciIsImNvbXBhbnlJZCI6IjIifQ.6D-YVRZAaVl5bpHb0iokz1PDKRp_6vNpxBJ8STmqP0A
+
+###
+
+### Check Whiskers' current status.
+POST {{PAWS.api_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "companyCode": "PAWS-B",
+  "email": "admin@pawsb.example.com",
+  "password": "Bootstrap-Test-123!"
+}
+
+###
+
+### Check Whiskers (petId 2).
+GET {{PAWS.api_HostAddress}}/api/pets/2
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTA1MTQwODgsImlhdCI6MTc5MDUxMDQ4OCwibmJmIjoxNzkwNTEwNDg4LCJzdWIiOiIxIiwibmFtZSI6IkZpcnN0IEFkbWluIiwiZW1haWwiOiJhZG1pbkBwYXdzYi5leGFtcGxlLmNvbSIsImp0aSI6IjNlY2UzMjU0LTcxOGEtNGFkZS04NTFmLTlmYzRkNTRiZGE1NiIsInJvbGUiOiJBZG1pbmlzdHJhdG9yIiwiY29tcGFueUlkIjoiMiJ9.3TxkVLH9opPy0U82iKdm6wZ5typizHvHD9-L7eQw8LY
+
+###
+
+### Adopter B applies for Whiskers.
+POST {{PAWS.api_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "companyCode": "PAWS-B",
+  "email": "adopter.b@pawsb.example.com",
+  "password": "AdopterB-Test-123!"
+}
+
+###
+
+### Submit application for Whiskers.
+POST {{PAWS.api_HostAddress}}/api/adoption-applications
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTA1MTQxMjQsImlhdCI6MTc5MDUxMDUyNCwibmJmIjoxNzkwNTEwNTI0LCJzdWIiOiI2IiwibmFtZSI6IlRlc3QgQWRvcHRlciBCIiwiZW1haWwiOiJhZG9wdGVyLmJAcGF3c2IuZXhhbXBsZS5jb20iLCJqdGkiOiI4Mzg5M2E4Ny1hMWIyLTQyMDUtODMyNS1kN2Q3MzhhYmI3YTgiLCJyb2xlIjoiQWRvcHRlciIsImNvbXBhbnlJZCI6IjIifQ.qBRn7ni8CXW4le3Cdwrw7MJUxOIzGyJzsfVpaamQrlY
+Content-Type: application/json
+
+{
+  "petId": 2,
+  "fullName": "Test Adopter B",
+  "reasonForAdopting": "Testing notification on approval."
+}
+
+###
+
+### Fresh Administrator login.
+POST {{PAWS.api_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "companyCode": "PAWS-B",
+  "email": "admin@pawsb.example.com",
+  "password": "Bootstrap-Test-123!"
+}
+
+###
+
+### List applications for Whiskers to find the ID.
+GET {{PAWS.api_HostAddress}}/api/adoption-applications
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTA1MTQxNzQsImlhdCI6MTc5MDUxMDU3NCwibmJmIjoxNzkwNTEwNTc0LCJzdWIiOiIxIiwibmFtZSI6IkZpcnN0IEFkbWluIiwiZW1haWwiOiJhZG1pbkBwYXdzYi5leGFtcGxlLmNvbSIsImp0aSI6ImFjYTcxNTE5LWQwY2QtNDMxNC1hZmUzLTBiNTQzYzczY2RlMiIsInJvbGUiOiJBZG1pbmlzdHJhdG9yIiwiY29tcGFueUlkIjoiMiJ9.b_qF0IWfsvwcXwSqR_q2TOJtPWD5-ccgcH89KwgurGA
+
+###
+
+### Approve Whiskers' application (id 170) for Adopter B.
+POST {{PAWS.api_HostAddress}}/api/adoption-applications/170/approve
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTA1MTQ1MzYsImlhdCI6MTc5MDUxMDkzNiwibmJmIjoxNzkwNTEwOTM2LCJzdWIiOiIxIiwibmFtZSI6IkZpcnN0IEFkbWluIiwiZW1haWwiOiJhZG1pbkBwYXdzYi5leGFtcGxlLmNvbSIsImp0aSI6IjBkMTVjNWVjLWZjMjctNDYyOS04NTM0LTgwMDAwMjNjMTNiYyIsInJvbGUiOiJBZG1pbmlzdHJhdG9yIiwiY29tcGFueUlkIjoiMiJ9.56q4Zytdi4_LJzRrpfHbEQuNU9-NPcV_smcNZ5fLV6k
+Content-Type: application/json
+
+{
+  "remarks": "Testing approval notification."
+}
+
+###
+
+### Fresh Adopter B login.
+POST {{PAWS.api_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "companyCode": "PAWS-B",
+  "email": "adopter.b@pawsb.example.com",
+  "password": "AdopterB-Test-123!"
+}
+
+###
+
+### Check Adopter B's unread notifications.
+GET {{PAWS.api_HostAddress}}/api/notifications?unreadOnly=true
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTA1MTQ1NzIsImlhdCI6MTc5MDUxMDk3MiwibmJmIjoxNzkwNTEwOTcyLCJzdWIiOiI2IiwibmFtZSI6IlRlc3QgQWRvcHRlciBCIiwiZW1haWwiOiJhZG9wdGVyLmJAcGF3c2IuZXhhbXBsZS5jb20iLCJqdGkiOiJlYjg3MmZiYS1lYTNkLTRmMGQtYTRmMi1lNGZiMjJmYjM3ZWMiLCJyb2xlIjoiQWRvcHRlciIsImNvbXBhbnlJZCI6IjIifQ.BOG-Od7K471nkYI3aKO7oMft3rIKfW7T-I2npQWzGR8
+
+###
+
+### Fresh Administrator login.
+POST {{PAWS.api_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "companyCode": "PAWS-B",
+  "email": "admin@pawsb.example.com",
+  "password": "Bootstrap-Test-123!"
+}
+
+###
+### Reject application 153.
+POST {{PAWS.api_HostAddress}}/api/adoption-applications/153/reject
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTA1MTQ2MzEsImlhdCI6MTc5MDUxMTAzMSwibmJmIjoxNzkwNTExMDMxLCJzdWIiOiIxIiwibmFtZSI6IkZpcnN0IEFkbWluIiwiZW1haWwiOiJhZG1pbkBwYXdzYi5leGFtcGxlLmNvbSIsImp0aSI6IjgyODMzNTgzLWI5OWMtNDNkNC1iNzQ4LWE4Mzg2Y2ExMjk4ZiIsInJvbGUiOiJBZG1pbmlzdHJhdG9yIiwiY29tcGFueUlkIjoiMiJ9.cDrq1t7S0o6YtKgK9CTTCkVJYjHtrIKVr0TjsNUT_3c
+Content-Type: application/json
+
+{
+  "rejectionReason": "Testing rejection notification."
+}
+
+###
+
+### Mark application 1 (Buddy) as Completed.
+POST {{PAWS.api_HostAddress}}/api/adoption-applications/1/complete
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTA1MTQ2MzEsImlhdCI6MTc5MDUxMTAzMSwibmJmIjoxNzkwNTExMDMxLCJzdWIiOiIxIiwibmFtZSI6IkZpcnN0IEFkbWluIiwiZW1haWwiOiJhZG1pbkBwYXdzYi5leGFtcGxlLmNvbSIsImp0aSI6IjgyODMzNTgzLWI5OWMtNDNkNC1iNzQ4LWE4Mzg2Y2ExMjk4ZiIsInJvbGUiOiJBZG1pbmlzdHJhdG9yIiwiY29tcGFueUlkIjoiMiJ9.cDrq1t7S0o6YtKgK9CTTCkVJYjHtrIKVr0TjsNUT_3c
+Content-Type: application/json
+
+{
+  "remarks": "Testing completion notification."
+}
+
+###
+
+### Fresh Adopter B login.
+POST {{PAWS.api_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "companyCode": "PAWS-B",
+  "email": "adopter.b@pawsb.example.com",
+  "password": "AdopterB-Test-123!"
+}
+
+###
+
+### Check unread notifications.
+GET {{PAWS.api_HostAddress}}/api/notifications?unreadOnly=true
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTA1MTU0OTMsImlhdCI6MTc5MDUxMTg5MywibmJmIjoxNzkwNTExODkzLCJzdWIiOiI2IiwibmFtZSI6IlRlc3QgQWRvcHRlciBCIiwiZW1haWwiOiJhZG9wdGVyLmJAcGF3c2IuZXhhbXBsZS5jb20iLCJqdGkiOiJlOTY1OGU0OS02NDgyLTRiZTUtYTgzYi01Nzg4ZTNkZTFlNTgiLCJyb2xlIjoiQWRvcHRlciIsImNvbXBhbnlJZCI6IjIifQ.ywqYaollbc0WzpJnJZq-GawsXrtTYtxsoFvqgc6KFAc
+
+###
+
+### Fresh Veterinarian login.
+POST {{PAWS.api_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "companyCode": "PAWS-B",
+  "email": "AngeloManingo123@paws.com",
+  "password": "Angelo2801@"
+}
+
+###
+
+### Create a medical record for Whiskers with FitForAdoption = true.
+POST {{PAWS.api_HostAddress}}/api/medical-records
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTA1MTU2NTAsImlhdCI6MTc5MDUxMjA1MCwibmJmIjoxNzkwNTEyMDUwLCJzdWIiOiI1IiwibmFtZSI6IkFuZ2VsbyBNYW5pbmdvIiwiZW1haWwiOiJBbmdlbG9NYW5pbmdvMTIzQHBhd3MuY29tIiwianRpIjoiMDM4MDM4MTctZmFmYy00ODAzLThjMzktODNlY2RiOTQ3NzUxIiwicm9sZSI6IlZldGVyaW5hcmlhbiIsImNvbXBhbnlJZCI6IjIifQ.LmPkh2Tit8-v2yt22eVVQ6WIfoBBbgF_97KAOw6YRVU
+Content-Type: application/json
+
+{
+  "petId": 2,
+  "examinationDate": "2026-09-27",
+  "diagnosis": "Fully recovered, healthy",
+  "healthStatus": "Excellent",
+  "fitForAdoption": true,
+  "notes": "Testing fit-for-adoption notification."
+}
+
+###
+
+### Fresh Administrator login.
+POST {{PAWS.api_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "companyCode": "PAWS-B",
+  "email": "admin@pawsb.example.com",
+  "password": "Bootstrap-Test-123!"
+}
+
+###
+
+### Check unread notifications.
+GET {{PAWS.api_HostAddress}}/api/notifications?unreadOnly=true
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTA1MTU2ODksImlhdCI6MTc5MDUxMjA4OSwibmJmIjoxNzkwNTEyMDg5LCJzdWIiOiIxIiwibmFtZSI6IkZpcnN0IEFkbWluIiwiZW1haWwiOiJhZG1pbkBwYXdzYi5leGFtcGxlLmNvbSIsImp0aSI6IjMwMmYwODE4LWU3YWYtNDFmZi1iNTI2LWQ3MjZkMGQwMjM3ZSIsInJvbGUiOiJBZG1pbmlzdHJhdG9yIiwiY29tcGFueUlkIjoiMiJ9.2xNME8n6rFpMJgrpNh2v3gerS3ckLPhXLDgr5XVexPI
+
+###
+
+### ===== Phase 25: System Administration testing =====
+### Super Admin login.
+POST {{PAWS.api_HostAddress}}/api/auth/platform-login
+Content-Type: application/json
+
+{
+  "email": "superadmin@paws.example.com",
+  "password": "SuperAdmin-Test-123!"
+}
+
+###
+
+### List all companies.
+GET {{PAWS.api_HostAddress}}/api/companies
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTA1MjMwNDYsImlhdCI6MTc5MDUxOTQ0NiwibmJmIjoxNzkwNTE5NDQ2LCJzdWIiOiIwIiwibmFtZSI6InN1cGVyYWRtaW5AcGF3cy5leGFtcGxlLmNvbSIsImVtYWlsIjoic3VwZXJhZG1pbkBwYXdzLmV4YW1wbGUuY29tIiwianRpIjoiOWMyYmE0YTAtMGU0Yy00NjM2LWJiNDQtMjE0Zjg4MzMyNDUwIiwicm9sZSI6IlN1cGVyIEFkbWluIn0.vaxR9_PNzCB4iPekvLuxcDyBI9oGeaDiS_L3hmXjz3A
+
+###
+
+### Confirm normal login works for PAWS-B right now.
+POST {{PAWS.api_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "companyCode": "PAWS-B",
+  "email": "admin@pawsb.example.com",
+  "password": "Bootstrap-Test-123!"
+}
+
+###
+
+### Super Admin deactivates PAWS-B (companyId 2).
+POST {{PAWS.api_HostAddress}}/api/companies/2/deactivate
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTA1MjMxNTEsImlhdCI6MTc5MDUxOTU1MSwibmJmIjoxNzkwNTE5NTUxLCJzdWIiOiIwIiwibmFtZSI6InN1cGVyYWRtaW5AcGF3cy5leGFtcGxlLmNvbSIsImVtYWlsIjoic3VwZXJhZG1pbkBwYXdzLmV4YW1wbGUuY29tIiwianRpIjoiOWZkMDYxNDktYjg5NS00Zjk5LWFlNTAtZGI1MzYzMjMyZGNhIiwicm9sZSI6IlN1cGVyIEFkbWluIn0.wz8TXPZ5A-4o1Yn0v75tapQXabqrOeM-28IBAjF6N4M
+
+###
+
+### Try logging in to PAWS-B now. Must be REFUSED with the distinct suspended message.
+POST {{PAWS.api_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "companyCode": "PAWS-B",
+  "email": "admin@pawsb.example.com",
+  "password": "Bootstrap-Test-123!"
+}
+
+###
+
+### Try registering a new Adopter in PAWS-B. Must be REFUSED with the same suspended message.
+POST {{PAWS.api_HostAddress}}/api/auth/register
+Content-Type: application/json
+
+{
+  "companyCode": "PAWS-B",
+  "fullName": "Test During Suspension",
+  "email": "suspended.test@pawsb.example.com",
+  "password": "Test-123!",
+  "confirmPassword": "Test-123!"
+}
+
+###
+
+### Fresh Super Admin login (in case the earlier token expired).
+POST {{PAWS.api_HostAddress}}/api/auth/platform-login
+Content-Type: application/json
+
+{
+  "email": "superadmin@paws.example.com",
+  "password": "SuperAdmin-Test-123!"
+}
+
+###
+
+### Reactivate PAWS-B.
+POST {{PAWS.api_HostAddress}}/api/companies/2/activate
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTA1MjMxNTEsImlhdCI6MTc5MDUxOTU1MSwibmJmIjoxNzkwNTE5NTUxLCJzdWIiOiIwIiwibmFtZSI6InN1cGVyYWRtaW5AcGF3cy5leGFtcGxlLmNvbSIsImVtYWlsIjoic3VwZXJhZG1pbkBwYXdzLmV4YW1wbGUuY29tIiwianRpIjoiOWZkMDYxNDktYjg5NS00Zjk5LWFlNTAtZGI1MzYzMjMyZGNhIiwicm9sZSI6IlN1cGVyIEFkbWluIn0.wz8TXPZ5A-4o1Yn0v75tapQXabqrOeM-28IBAjF6N4M
+
+###
+
+### Confirm login works normally again.
+POST {{PAWS.api_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "companyCode": "PAWS-B",
+  "email": "admin@pawsb.example.com",
+  "password": "Bootstrap-Test-123!"
+}
+
+###
+
+### Fresh Administrator login.
+POST {{PAWS.api_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "companyCode": "PAWS-B",
+  "email": "admin@pawsb.example.com",
+  "password": "Bootstrap-Test-123!"
+}
+
+###
+### Create a 20% off promo for Adopter B (userId 6).
+POST {{PAWS.api_HostAddress}}/api/promos?userId=6
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTA1MzMxNjAsImlhdCI6MTc5MDUyOTU2MCwibmJmIjoxNzkwNTI5NTYwLCJzdWIiOiIxIiwibmFtZSI6IkZpcnN0IEFkbWluIiwiZW1haWwiOiJhZG1pbkBwYXdzYi5leGFtcGxlLmNvbSIsImp0aSI6IjVjNjVjZTgyLWE4MTgtNGFhZC1hNmJjLWQwN2JmYTk2NzQ0MiIsInJvbGUiOiJBZG1pbmlzdHJhdG9yIiwiY29tcGFueUlkIjoiMiJ9.ScZqpqeZmd9_fiQSHJJjJuEy8CYVVacfrFrkO_5Jxm4
+Content-Type: application/json
+
+{
+  "title": "20% Off Adoption Fee",
+  "description": "Thanks for being a loyal customer!",
+  "discountType": "Percentage",
+  "discountValue": 20,
+  "expiryDate": "2026-12-31"
+}
+
+###
+
+### List promos for Adopter B (userId 6).
+GET {{PAWS.api_HostAddress}}/api/promos?userId=6
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTA1MzMxNjAsImlhdCI6MTc5MDUyOTU2MCwibmJmIjoxNzkwNTI5NTYwLCJzdWIiOiIxIiwibmFtZSI6IkZpcnN0IEFkbWluIiwiZW1haWwiOiJhZG1pbkBwYXdzYi5leGFtcGxlLmNvbSIsImp0aSI6IjVjNjVjZTgyLWE4MTgtNGFhZC1hNmJjLWQwN2JmYTk2NzQ0MiIsInJvbGUiOiJBZG1pbmlzdHJhdG9yIiwiY29tcGFueUlkIjoiMiJ9.ScZqpqeZmd9_fiQSHJJjJuEy8CYVVacfrFrkO_5Jxm4
+
+###
+
+### Redeem promo 1.
+POST {{PAWS.api_HostAddress}}/api/promos/1/redeem
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTA1MzMxNjAsImlhdCI6MTc5MDUyOTU2MCwibmJmIjoxNzkwNTI5NTYwLCJzdWIiOiIxIiwibmFtZSI6IkZpcnN0IEFkbWluIiwiZW1haWwiOiJhZG1pbkBwYXdzYi5leGFtcGxlLmNvbSIsImp0aSI6IjVjNjVjZTgyLWE4MTgtNGFhZC1hNmJjLWQwN2JmYTk2NzQ0MiIsInJvbGUiOiJBZG1pbmlzdHJhdG9yIiwiY29tcGFueUlkIjoiMiJ9.ScZqpqeZmd9_fiQSHJJjJuEy8CYVVacfrFrkO_5Jxm4
+
+###
+### List promos again. Should now show promoStatus: "Redeemed".
+GET {{PAWS.api_HostAddress}}/api/promos?userId=6
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTA1MzMxNjAsImlhdCI6MTc5MDUyOTU2MCwibmJmIjoxNzkwNTI5NTYwLCJzdWIiOiIxIiwibmFtZSI6IkZpcnN0IEFkbWluIiwiZW1haWwiOiJhZG1pbkBwYXdzYi5leGFtcGxlLmNvbSIsImp0aSI6IjVjNjVjZTgyLWE4MTgtNGFhZC1hNmJjLWQwN2JmYTk2NzQ0MiIsInJvbGUiOiJBZG1pbmlzdHJhdG9yIiwiY29tcGFueUlkIjoiMiJ9.ScZqpqeZmd9_fiQSHJJjJuEy8CYVVacfrFrkO_5Jxm4
+
+###
+
+### Try creating a promo for the Administrator themselves (userId 1, not an Adopter). Must be REFUSED.
+POST {{PAWS.api_HostAddress}}/api/promos?userId=1
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTA1MzMxNjAsImlhdCI6MTc5MDUyOTU2MCwibmJmIjoxNzkwNTI5NTYwLCJzdWIiOiIxIiwibmFtZSI6IkZpcnN0IEFkbWluIiwiZW1haWwiOiJhZG1pbkBwYXdzYi5leGFtcGxlLmNvbSIsImp0aSI6IjVjNjVjZTgyLWE4MTgtNGFhZC1hNmJjLWQwN2JmYTk2NzQ0MiIsInJvbGUiOiJBZG1pbmlzdHJhdG9yIiwiY29tcGFueUlkIjoiMiJ9.ScZqpqeZmd9_fiQSHJJjJuEy8CYVVacfrFrkO_5Jxm4
+Content-Type: application/json
+
+{
+  "title": "Testing non-adopter block",
+  "discountType": "Other"
+}
+
+###
+
+### ===== Branches testing =====
+### Fresh Administrator login.
+POST {{PAWS.api_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "companyCode": "PAWS-B",
+  "email": "admin@pawsb.example.com",
+  "password": "Bootstrap-Test-123!"
+}
+
+###
+
+### List branches.
+GET {{PAWS.api_HostAddress}}/api/branches
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTA3MTU3NjIsImlhdCI6MTc5MDcxMjE2MiwibmJmIjoxNzkwNzEyMTYyLCJzdWIiOiIxIiwibmFtZSI6IkZpcnN0IEFkbWluIiwiZW1haWwiOiJhZG1pbkBwYXdzYi5leGFtcGxlLmNvbSIsImp0aSI6IjZmNmY2YzcyLWVlZTItNGQzZS1iNDgyLTNmNDhlODQ4ZGVmMSIsInJvbGUiOiJBZG1pbmlzdHJhdG9yIiwiY29tcGFueUlkIjoiMiJ9.lGT6k_I_NHz4I5FSgTZRcTUn4Rb1-7n_RHM3VtxxQCU
+
+###
+
+### Create a second branch.
+POST {{PAWS.api_HostAddress}}/api/branches
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTA3MTU3NjIsImlhdCI6MTc5MDcxMjE2MiwibmJmIjoxNzkwNzEyMTYyLCJzdWIiOiIxIiwibmFtZSI6IkZpcnN0IEFkbWluIiwiZW1haWwiOiJhZG1pbkBwYXdzYi5leGFtcGxlLmNvbSIsImp0aSI6IjZmNmY2YzcyLWVlZTItNGQzZS1iNDgyLTNmNDhlODQ4ZGVmMSIsInJvbGUiOiJBZG1pbmlzdHJhdG9yIiwiY29tcGFueUlkIjoiMiJ9.lGT6k_I_NHz4I5FSgTZRcTUn4Rb1-7n_RHM3VtxxQCU
+Content-Type: application/json
+
+{
+  "branchName": "Davao Branch",
+  "address": "123 Rizal St, Davao City"
+}
+
+###
+
+### List branches again. Should now show two.
+GET {{PAWS.api_HostAddress}}/api/branches
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTA3MTU3NjIsImlhdCI6MTc5MDcxMjE2MiwibmJmIjoxNzkwNzEyMTYyLCJzdWIiOiIxIiwibmFtZSI6IkZpcnN0IEFkbWluIiwiZW1haWwiOiJhZG1pbkBwYXdzYi5leGFtcGxlLmNvbSIsImp0aSI6IjZmNmY2YzcyLWVlZTItNGQzZS1iNDgyLTNmNDhlODQ4ZGVmMSIsInJvbGUiOiJBZG1pbmlzdHJhdG9yIiwiY29tcGFueUlkIjoiMiJ9.lGT6k_I_NHz4I5FSgTZRcTUn4Rb1-7n_RHM3VtxxQCU
+
+###
+
+### Try creating a branch with a duplicate name. Must be REFUSED.
+POST {{PAWS.api_HostAddress}}/api/branches
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTA3MTU3NjIsImlhdCI6MTc5MDcxMjE2MiwibmJmIjoxNzkwNzEyMTYyLCJzdWIiOiIxIiwibmFtZSI6IkZpcnN0IEFkbWluIiwiZW1haWwiOiJhZG1pbkBwYXdzYi5leGFtcGxlLmNvbSIsImp0aSI6IjZmNmY2YzcyLWVlZTItNGQzZS1iNDgyLTNmNDhlODQ4ZGVmMSIsInJvbGUiOiJBZG1pbmlzdHJhdG9yIiwiY29tcGFueUlkIjoiMiJ9.lGT6k_I_NHz4I5FSgTZRcTUn4Rb1-7n_RHM3VtxxQCU
+Content-Type: application/json
+
+{
+  "branchName": "Main Branch"
+}
+
+###
+
+### Try deactivating Main Branch, which still has 84 active pets. Must be REFUSED.
+POST {{PAWS.api_HostAddress}}/api/branches/1/deactivate
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTA3MTU3NjIsImlhdCI6MTc5MDcxMjE2MiwibmJmIjoxNzkwNzEyMTYyLCJzdWIiOiIxIiwibmFtZSI6IkZpcnN0IEFkbWluIiwiZW1haWwiOiJhZG1pbkBwYXdzYi5leGFtcGxlLmNvbSIsImp0aSI6IjZmNmY2YzcyLWVlZTItNGQzZS1iNDgyLTNmNDhlODQ4ZGVmMSIsInJvbGUiOiJBZG1pbmlzdHJhdG9yIiwiY29tcGFueUlkIjoiMiJ9.lGT6k_I_NHz4I5FSgTZRcTUn4Rb1-7n_RHM3VtxxQCU
+
+###
+
+### Deactivate Davao Branch instead, which has 0 pets. Should SUCCEED.
+POST {{PAWS.api_HostAddress}}/api/branches/2/deactivate
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTA3MTU3NjIsImlhdCI6MTc5MDcxMjE2MiwibmJmIjoxNzkwNzEyMTYyLCJzdWIiOiIxIiwibmFtZSI6IkZpcnN0IEFkbWluIiwiZW1haWwiOiJhZG1pbkBwYXdzYi5leGFtcGxlLmNvbSIsImp0aSI6IjZmNmY2YzcyLWVlZTItNGQzZS1iNDgyLTNmNDhlODQ4ZGVmMSIsInJvbGUiOiJBZG1pbmlzdHJhdG9yIiwiY29tcGFueUlkIjoiMiJ9.lGT6k_I_NHz4I5FSgTZRcTUn4Rb1-7n_RHM3VtxxQCU
+
+
+### Reactivate Davao Branch.
+POST {{PAWS.api_HostAddress}}/api/branches/2/activate
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTA3MTU3NjIsImlhdCI6MTc5MDcxMjE2MiwibmJmIjoxNzkwNzEyMTYyLCJzdWIiOiIxIiwibmFtZSI6IkZpcnN0IEFkbWluIiwiZW1haWwiOiJhZG1pbkBwYXdzYi5leGFtcGxlLmNvbSIsImp0aSI6IjZmNmY2YzcyLWVlZTItNGQzZS1iNDgyLTNmNDhlODQ4ZGVmMSIsInJvbGUiOiJBZG1pbmlzdHJhdG9yIiwiY29tcGFueUlkIjoiMiJ9.lGT6k_I_NHz4I5FSgTZRcTUn4Rb1-7n_RHM3VtxxQCU
+
+###
+
+### Fresh Administrator login.
+POST {{PAWS.api_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "companyCode": "PAWS-B",
+  "email": "admin@pawsb.example.com",
+  "password": "Bootstrap-Test-123!"
+}
+
+###
+
+### List pets. Confirm branchId/branchName appear correctly.
+GET {{PAWS.api_HostAddress}}/api/pets?status=Available
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTA3MTYxMjIsImlhdCI6MTc5MDcxMjUyMiwibmJmIjoxNzkwNzEyNTIyLCJzdWIiOiIxIiwibmFtZSI6IkZpcnN0IEFkbWluIiwiZW1haWwiOiJhZG1pbkBwYXdzYi5leGFtcGxlLmNvbSIsImp0aSI6ImNiODRlMDczLTdiMDYtNDYyZC1hY2I0LTVkOWE3YjhiNjM1YyIsInJvbGUiOiJBZG1pbmlzdHJhdG9yIiwiY29tcGFueUlkIjoiMiJ9.49k6qaUlvPP_ZYalIkCQcF4VcoQoOxMXfDbafD21_8s
+
+###
+
+### Filter pets by branch (Main Branch = 1).
+GET {{PAWS.api_HostAddress}}/api/pets?branchId=1
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTA3MTYxMjIsImlhdCI6MTc5MDcxMjUyMiwibmJmIjoxNzkwNzEyNTIyLCJzdWIiOiIxIiwibmFtZSI6IkZpcnN0IEFkbWluIiwiZW1haWwiOiJhZG1pbkBwYXdzYi5leGFtcGxlLmNvbSIsImp0aSI6ImNiODRlMDczLTdiMDYtNDYyZC1hY2I0LTVkOWE3YjhiNjM1YyIsInJvbGUiOiJBZG1pbmlzdHJhdG9yIiwiY29tcGFueUlkIjoiMiJ9.49k6qaUlvPP_ZYalIkCQcF4VcoQoOxMXfDbafD21_8s
+
+###
+
+### Filter by Davao Branch (id 2) — should return an empty list, since no pets are assigned there yet.
+GET {{PAWS.api_HostAddress}}/api/pets?branchId=2
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTA3MTYxMjIsImlhdCI6MTc5MDcxMjUyMiwibmJmIjoxNzkwNzEyNTIyLCJzdWIiOiIxIiwibmFtZSI6IkZpcnN0IEFkbWluIiwiZW1haWwiOiJhZG1pbkBwYXdzYi5leGFtcGxlLmNvbSIsImp0aSI6ImNiODRlMDczLTdiMDYtNDYyZC1hY2I0LTVkOWE3YjhiNjM1YyIsInJvbGUiOiJBZG1pbmlzdHJhdG9yIiwiY29tcGFueUlkIjoiMiJ9.49k6qaUlvPP_ZYalIkCQcF4VcoQoOxMXfDbafD21_8s
+
+###
+
+### ===== Donation testing =====
+### Adopter B login.
+POST {{PAWS.api_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "companyCode": "PAWS-B",
+  "email": "adopter.b@pawsb.example.com",
+  "password": "AdopterB-Test-123!"
+}
+
+###
+
+### Check available pets to find one to apply for.
+GET {{PAWS.api_HostAddress}}/api/pets?status=Available
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTA3MTkwMTksImlhdCI6MTc5MDcxNTQxOSwibmJmIjoxNzkwNzE1NDE5LCJzdWIiOiI2IiwibmFtZSI6IlRlc3QgQWRvcHRlciBCIiwiZW1haWwiOiJhZG9wdGVyLmJAcGF3c2IuZXhhbXBsZS5jb20iLCJqdGkiOiJjNTE0ZTRmYy1mOGJmLTQzYjctYjdjNi1iZmFiM2ZjNDZiMmQiLCJyb2xlIjoiQWRvcHRlciIsImNvbXBhbnlJZCI6IjIifQ.lR_yYUoY94l4iMGNVMyXM4gTtPRtRzA6houIQTh1mjw
+
+###
+
+### Submit application for petId 85, with a donation.
+POST {{PAWS.api_HostAddress}}/api/adoption-applications
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTA3MTkwMTksImlhdCI6MTc5MDcxNTQxOSwibmJmIjoxNzkwNzE1NDE5LCJzdWIiOiI2IiwibmFtZSI6IlRlc3QgQWRvcHRlciBCIiwiZW1haWwiOiJhZG9wdGVyLmJAcGF3c2IuZXhhbXBsZS5jb20iLCJqdGkiOiJjNTE0ZTRmYy1mOGJmLTQzYjctYjdjNi1iZmFiM2ZjNDZiMmQiLCJyb2xlIjoiQWRvcHRlciIsImNvbXBhbnlJZCI6IjIifQ.lR_yYUoY94l4iMGNVMyXM4gTtPRtRzA6houIQTh1mjw
+Content-Type: application/json
+
+{
+  "petId": 85,
+  "fullName": "Test Adopter B",
+  "email": "adopter.b@pawsb.example.com",
+  "phone": "09171234567",
+  "address": "123 Test St, Davao City",
+  "occupation": "Engineer",
+  "housingType": "House",
+  "homeDescription": "A comfortable house with a yard.",
+  "hasYard": true,
+  "hasOtherPets": false,
+  "hasChildren": false,
+  "workingHours": "9am-5pm",
+  "reasonForAdopting": "I want a companion.",
+  "petExperience": "I've had dogs before.",
+  "emergencyContactName": "Jane Doe",
+  "emergencyContactPhone": "09179876543",
+  "emergencyContactRelationship": "Sister",
+  "donationAmount": 250
+}
+
+###
+
+### Fresh Administrator login.
+POST {{PAWS.api_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "companyCode": "PAWS-B",
+  "email": "admin@pawsb.example.com",
+  "password": "Bootstrap-Test-123!"
+}
+
+###
+
+### List payments filtered by Type=Donation, Status=Pending.
+GET {{PAWS.api_HostAddress}}/api/payments?status=Pending&type=Donation
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTA3MTkxMDYsImlhdCI6MTc5MDcxNTUwNiwibmJmIjoxNzkwNzE1NTA2LCJzdWIiOiIxIiwibmFtZSI6IkZpcnN0IEFkbWluIiwiZW1haWwiOiJhZG1pbkBwYXdzYi5leGFtcGxlLmNvbSIsImp0aSI6IjA4NWRiMzI1LTg2MzgtNGNkYi1iYzlhLTU4ODEzM2NjOWRlZCIsInJvbGUiOiJBZG1pbmlzdHJhdG9yIiwiY29tcGFueUlkIjoiMiJ9.TiZHJjlXlR6tRvuhjK2Zt9WxNwijIcm9srrWbl4wWwE
+
+###
+
+### Mark the donation payment as Completed, using the existing endpoint.
+POST {{PAWS.api_HostAddress}}/api/payments/41/status
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTA3MTkxNzAsImlhdCI6MTc5MDcxNTU3MCwibmJmIjoxNzkwNzE1NTcwLCJzdWIiOiIxIiwibmFtZSI6IkZpcnN0IEFkbWluIiwiZW1haWwiOiJhZG1pbkBwYXdzYi5leGFtcGxlLmNvbSIsImp0aSI6IjRjMjg2NzczLTA5YTQtNDFiYS1hYmVjLWZmZDliMjk4YTQzYyIsInJvbGUiOiJBZG1pbmlzdHJhdG9yIiwiY29tcGFueUlkIjoiMiJ9.E46D7ejJDPqlwqnTN7YbE-3xIsOouZebQIWlN7qh4xA
+Content-Type: application/json
+
+{
+  "status": "Completed"
+}
+
+###
+
+### Fresh Super Admin login.
+POST {{PAWS.api_HostAddress}}/api/auth/platform-login
+Content-Type: application/json
+
+{
+  "email": "superadmin@paws.example.com",
+  "password": "SuperAdmin-Test-123!"
+}
+
+###
+
+### Confirm current plans (should all show "Free").
+GET {{PAWS.api_HostAddress}}/api/companies
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTA4MDA1NzQsImlhdCI6MTc5MDc5Njk3NCwibmJmIjoxNzkwNzk2OTc0LCJzdWIiOiIwIiwibmFtZSI6InN1cGVyYWRtaW5AcGF3cy5leGFtcGxlLmNvbSIsImVtYWlsIjoic3VwZXJhZG1pbkBwYXdzLmV4YW1wbGUuY29tIiwianRpIjoiNWQ4MDk4M2MtMGZjMy00NGZjLTk0NzItNDQyNjljZDFiNTI5Iiwicm9sZSI6IlN1cGVyIEFkbWluIn0.OGskhwFI433M7YLBIshuoaeopWTt_hc9es05qeG7lAY
+
+###
+
+### Set PAWS-C (companyId 3) to Premium.
+POST {{PAWS.api_HostAddress}}/api/companies/3/subscription-plan
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTA4MDA1NzQsImlhdCI6MTc5MDc5Njk3NCwibmJmIjoxNzkwNzk2OTc0LCJzdWIiOiIwIiwibmFtZSI6InN1cGVyYWRtaW5AcGF3cy5leGFtcGxlLmNvbSIsImVtYWlsIjoic3VwZXJhZG1pbkBwYXdzLmV4YW1wbGUuY29tIiwianRpIjoiNWQ4MDk4M2MtMGZjMy00NGZjLTk0NzItNDQyNjljZDFiNTI5Iiwicm9sZSI6IlN1cGVyIEFkbWluIn0.OGskhwFI433M7YLBIshuoaeopWTt_hc9es05qeG7lAY
+Content-Type: application/json
+
+{
+  "subscriptionPlan": "Premium"
+}
+
+###
+
+### Confirm it updated.
+GET {{PAWS.api_HostAddress}}/api/companies
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTA4MDA1NzQsImlhdCI6MTc5MDc5Njk3NCwibmJmIjoxNzkwNzk2OTc0LCJzdWIiOiIwIiwibmFtZSI6InN1cGVyYWRtaW5AcGF3cy5leGFtcGxlLmNvbSIsImVtYWlsIjoic3VwZXJhZG1pbkBwYXdzLmV4YW1wbGUuY29tIiwianRpIjoiNWQ4MDk4M2MtMGZjMy00NGZjLTk0NzItNDQyNjljZDFiNTI5Iiwicm9sZSI6IlN1cGVyIEFkbWluIn0.OGskhwFI433M7YLBIshuoaeopWTt_hc9es05qeG7lAY
+
+###
+
+### Fresh Administrator login (PAWS-B).
+POST {{PAWS.api_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "companyCode": "PAWS-B",
+  "email": "admin@pawsb.example.com",
+  "password": "Bootstrap-Test-123!"
+}
+
+###
+
+### Try creating a third branch. Must be REFUSED (Free plan, limit 1, already has 2).
+POST {{PAWS.api_HostAddress}}/api/branches
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTA4MDA3OTQsImlhdCI6MTc5MDc5NzE5NCwibmJmIjoxNzkwNzk3MTk0LCJzdWIiOiIxIiwibmFtZSI6IkZpcnN0IEFkbWluIiwiZW1haWwiOiJhZG1pbkBwYXdzYi5leGFtcGxlLmNvbSIsImp0aSI6Ijg2MWQ3MjZhLWEyMzgtNDJhYi1iMjM3LWYyNGZmNTY2ODQ1OSIsInJvbGUiOiJBZG1pbmlzdHJhdG9yIiwiY29tcGFueUlkIjoiMiJ9.KMTYnHbVuzzgkUms7GoUD-uO0HSvtAn00BUoBFQ938c
+Content-Type: application/json
+
+{
+  "branchName": "Should Be Blocked"
+}
+
+###
+
+### Fresh Super Admin login.
+POST {{PAWS.api_HostAddress}}/api/auth/platform-login
+Content-Type: application/json
+
+{
+  "email": "superadmin@paws.example.com",
+  "password": "SuperAdmin-Test-123!"
+}
+
+###
+
+### Upgrade PAWS-B (companyId 2) to Basic (limit 3).
+POST {{PAWS.api_HostAddress}}/api/companies/2/subscription-plan
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTA4MDA5MDgsImlhdCI6MTc5MDc5NzMwOCwibmJmIjoxNzkwNzk3MzA4LCJzdWIiOiIwIiwibmFtZSI6InN1cGVyYWRtaW5AcGF3cy5leGFtcGxlLmNvbSIsImVtYWlsIjoic3VwZXJhZG1pbkBwYXdzLmV4YW1wbGUuY29tIiwianRpIjoiMjZkZTkzZTYtMDQ3MS00NjYyLWFiMDYtNDFhMmIwMmJiZTRhIiwicm9sZSI6IlN1cGVyIEFkbWluIn0.XG5sfOu8v4pifPAuOgqSA0yNm7LL_Sg36opDB1kn5V8
+Content-Type: application/json
+
+{
+  "subscriptionPlan": "Basic"
+}
+
+###
+
+### Fresh Administrator login (PAWS-B) again.
+POST {{PAWS.api_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "companyCode": "PAWS-B",
+  "email": "admin@pawsb.example.com",
+  "password": "Bootstrap-Test-123!"
+}
+
+###
+
+### Try creating a third branch again. Should now SUCCEED (Basic plan, limit 3, has 2).
+POST {{PAWS.api_HostAddress}}/api/branches
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTA4MDA4MjgsImlhdCI6MTc5MDc5NzIyOCwibmJmIjoxNzkwNzk3MjI4LCJzdWIiOiIxIiwibmFtZSI6IkZpcnN0IEFkbWluIiwiZW1haWwiOiJhZG1pbkBwYXdzYi5leGFtcGxlLmNvbSIsImp0aSI6IjJiYTY1MDdhLTNmYzEtNGU1MS1hODg4LWFjODJjYzIyMDQzMCIsInJvbGUiOiJBZG1pbmlzdHJhdG9yIiwiY29tcGFueUlkIjoiMiJ9.PYLcyBWpWidcrZJ0_V0lAfhHIAX-ifvDiGFj3P045Wc
+Content-Type: application/json
+
+{
+  "branchName": "Panabo Branch B"
+}
+
+###
+
+### List branches to confirm the actual current count.
+GET {{PAWS.api_HostAddress}}/api/branches
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTA4MDA4MjgsImlhdCI6MTc5MDc5NzIyOCwibmJmIjoxNzkwNzk3MjI4LCJzdWIiOiIxIiwibmFtZSI6IkZpcnN0IEFkbWluIiwiZW1haWwiOiJhZG1pbkBwYXdzYi5leGFtcGxlLmNvbSIsImp0aSI6IjJiYTY1MDdhLTNmYzEtNGU1MS1hODg4LWFjODJjYzIyMDQzMCIsInJvbGUiOiJBZG1pbmlzdHJhdG9yIiwiY29tcGFueUlkIjoiMiJ9.PYLcyBWpWidcrZJ0_V0lAfhHIAX-ifvDiGFj3P045Wc
+
+###
+
+### Fresh Super Admin login.
+POST {{PAWS.api_HostAddress}}/api/auth/platform-login
+Content-Type: application/json
+
+{
+  "email": "superadmin@paws.example.com",
+  "password": "SuperAdmin-Test-123!"
+}
+
+###
+
+### Upgrade PAWS-B to Premium (unlimited).
+POST {{PAWS.api_HostAddress}}/api/companies/2/subscription-plan
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTA4MDEwMTYsImlhdCI6MTc5MDc5NzQxNiwibmJmIjoxNzkwNzk3NDE2LCJzdWIiOiIwIiwibmFtZSI6InN1cGVyYWRtaW5AcGF3cy5leGFtcGxlLmNvbSIsImVtYWlsIjoic3VwZXJhZG1pbkBwYXdzLmV4YW1wbGUuY29tIiwianRpIjoiOGY4YTFjMTEtMDI1MC00NTc1LWI3ZjctYzdmNTc2MGYxN2RjIiwicm9sZSI6IlN1cGVyIEFkbWluIn0.LVpBbtZ3OM9duMCx0LCd2R7oVdpO02WpcrgLChriaqk
+Content-Type: application/json
+
+{
+  "subscriptionPlan": "Premium"
+}
+
+###
+
+### Fresh Administrator login (PAWS-B) again.
+POST {{PAWS.api_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "companyCode": "PAWS-B",
+  "email": "admin@pawsb.example.com",
+  "password": "Bootstrap-Test-123!"
+}
+
+###
+
+### Try creating a 4th branch. Should now SUCCEED.
+POST {{PAWS.api_HostAddress}}/api/branches
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTA4MDEwMzEsImlhdCI6MTc5MDc5NzQzMSwibmJmIjoxNzkwNzk3NDMxLCJzdWIiOiIxIiwibmFtZSI6IkZpcnN0IEFkbWluIiwiZW1haWwiOiJhZG1pbkBwYXdzYi5leGFtcGxlLmNvbSIsImp0aSI6ImQ4NmE4MWE4LTMyNDItNDc2OS1hMjhjLTRhZDUyM2UyZGNiNyIsInJvbGUiOiJBZG1pbmlzdHJhdG9yIiwiY29tcGFueUlkIjoiMiJ9.4PQG6xI2rTKpVZc7rCLoTWP3fJHZwHb_Yi-DBbJwvfA
+Content-Type: application/json
+
+{
+  "branchName": "Panabo Branch B"
+}
+
+###
+
+### Fresh Administrator login (PAWS-B, currently Premium, has 4 branches).
+POST {{PAWS.api_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "companyCode": "PAWS-B",
+  "email": "admin@pawsb.example.com",
+  "password": "Bootstrap-Test-123!"
+}
+
+###
+
+### Check my company's plan.
+GET {{PAWS.api_HostAddress}}/api/branches/my-plan
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTA4MDE4NjksImlhdCI6MTc5MDc5ODI2OSwibmJmIjoxNzkwNzk4MjY5LCJzdWIiOiIxIiwibmFtZSI6IkZpcnN0IEFkbWluIiwiZW1haWwiOiJhZG1pbkBwYXdzYi5leGFtcGxlLmNvbSIsImp0aSI6IjY3MzZlNzg0LWQ0YjgtNDAwNC1iYmM4LWExZjU4N2Y4ZjdkOCIsInJvbGUiOiJBZG1pbmlzdHJhdG9yIiwiY29tcGFueUlkIjoiMiJ9.eMhZmt5tvMQDkpwgG8DeE2x9lxgQXEoQImPIciIECNY
+
+###
+
+### Fresh Administrator login (PAWS-A, now Basic, 1 branch).
+POST {{PAWS.api_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "companyCode": "PAWS-A",
+  "email": "admin@pawsa.example.com",
+  "password": "PASTE_ITS_REAL_PASSWORD_HERE"
+}
+
+###
+
+### Check my company's plan.
+GET {{PAWS.api_HostAddress}}/api/branches/my-plan
+Authorization: Bearer PASTE_ADMIN_TOKEN_HERE
+
+###
+
+### Fresh Super Admin login.
+POST {{PAWS.api_HostAddress}}/api/auth/platform-login
+Content-Type: application/json
+
+{
+  "email": "superadmin@paws.example.com",
+  "password": "SuperAdmin-Test-123!"
+}
+
+###
+
+### Get cross-company BI data.
+GET {{PAWS.api_HostAddress}}/api/companies/super-admin-bi
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTA4MDMyNzgsImlhdCI6MTc5MDc5OTY3OCwibmJmIjoxNzkwNzk5Njc4LCJzdWIiOiIwIiwibmFtZSI6InN1cGVyYWRtaW5AcGF3cy5leGFtcGxlLmNvbSIsImVtYWlsIjoic3VwZXJhZG1pbkBwYXdzLmV4YW1wbGUuY29tIiwianRpIjoiZGRkZGJhMmMtM2IzNC00YTE1LThhMWEtY2M5NDJmZDVkYzgzIiwicm9sZSI6IlN1cGVyIEFkbWluIn0.WktNB1XnIYobUNbKqekXMneQPyl1sLnkT4jRSpiZpxs
+
+###
+
+### List PAWS-B's branches directly to confirm the real count.
+POST {{PAWS.api_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "companyCode": "PAWS-B",
+  "email": "admin@pawsb.example.com",
+  "password": "Bootstrap-Test-123!"
+}
+
+###
+
+### 
+GET {{PAWS.api_HostAddress}}/api/branches
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTA4MDMzNDUsImlhdCI6MTc5MDc5OTc0NSwibmJmIjoxNzkwNzk5NzQ1LCJzdWIiOiIxIiwibmFtZSI6IkZpcnN0IEFkbWluIiwiZW1haWwiOiJhZG1pbkBwYXdzYi5leGFtcGxlLmNvbSIsImp0aSI6Ijk3ODQ0ZTUyLTliZDEtNGUwNy04MzNjLTY3NDMwZmM0ZDg3NSIsInJvbGUiOiJBZG1pbmlzdHJhdG9yIiwiY29tcGFueUlkIjoiMiJ9.UbLsEWAGfxPouf5O63YMNW8lEp7O9nPetg7vyTIlffw
+
+###
+
+### Fresh Administrator login (PAWS-B).
+POST {{PAWS.api_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "companyCode": "PAWS-B",
+  "email": "admin@pawsb.example.com",
+  "password": "Bootstrap-Test-123!"
+}
+
+###
+
+### Get BI summary — check adoptionsByBranch, incomeByBranch, incomeTrend.
+GET {{PAWS.api_HostAddress}}/api/reports/bi-summary
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTA4NDk2NjUsImlhdCI6MTc5MDg0NjA2NSwibmJmIjoxNzkwODQ2MDY1LCJzdWIiOiIxIiwibmFtZSI6IkZpcnN0IEFkbWluIiwiZW1haWwiOiJhZG1pbkBwYXdzYi5leGFtcGxlLmNvbSIsImp0aSI6ImQxOGZhNzdhLWQxNTktNDc5NC05NTZhLTQ0N2U5YzAwMTFjMSIsInJvbGUiOiJBZG1pbmlzdHJhdG9yIiwiY29tcGFueUlkIjoiMiJ9.ntBBMRrYk87IodCdRgFAhh65YzNAdzq50Maz_8jFO5A
+
+###
+
+### Fresh Administrator login (PAWS-B).
+POST {{PAWS.api_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "companyCode": "PAWS-B",
+  "email": "admin@pawsb.example.com",
+  "password": "Bootstrap-Test-123!"
+}
+
+###
+
+### Filter payments by Davao Branch (branchId 2) only.
+GET {{PAWS.api_HostAddress}}/api/payments?branchId=2
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTA4NTIxNTMsImlhdCI6MTc5MDg0ODU1MywibmJmIjoxNzkwODQ4NTUzLCJzdWIiOiIxIiwibmFtZSI6IkZpcnN0IEFkbWluIiwiZW1haWwiOiJhZG1pbkBwYXdzYi5leGFtcGxlLmNvbSIsImp0aSI6IjRlZTUzZmZmLTlmZjQtNDA3YS1iMDVjLWIxODlkNThhMTQ3MiIsInJvbGUiOiJBZG1pbmlzdHJhdG9yIiwiY29tcGFueUlkIjoiMiJ9.IxV02OrJ_zJGCwAfg6O4vSf6IJX_l1_oub5e4_KZq0o
+
+###
+
+
+### Bootstrap the first admin for PAWS-LOCAL.
+POST {{PAWS.api_HostAddress}}/api/auth/bootstrap-admin
+Content-Type: application/json
+
+{
+  "setupKey": "3LA4gOo2DESfqqCCE+EAMdzWBnJLZEyE",
+  "companyCode": "PAWS-LOCAL",
+  "fullName": "Local Admin",
+  "email": "admin@local.paws",
+  "password": "LocalAdmin-Test-123!",
+  "confirmPassword": "LocalAdmin-Test-123!"
+}
+
+###
+### Log into PAWS-LOCAL as the new admin.
+POST {{PAWS.api_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "companyCode": "PAWS-LOCAL",
+  "email": "admin@local.paws",
+  "password": "LocalAdmin-Test-123!"
+}
+
+###
+### ===== Subscription Plans Step 2 tests =====
+
+### Super Admin login (saves token automatically)
+# @name superLogin
+POST {{PAWS.api_HostAddress}}/api/auth/platform-login
+Content-Type: application/json
+
+{
+  "email": "superadmin@paws.example.com",
+  "password": eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTExMzA4NjEsImlhdCI6MTc5MTEyNzI2MSwibmJmIjoxNzkxMTI3MjYxLCJzdWIiOiIwIiwibmFtZSI6InN1cGVyYWRtaW5AcGF3cy5leGFtcGxlLmNvbSIsImVtYWlsIjoic3VwZXJhZG1pbkBwYXdzLmV4YW1wbGUuY29tIiwianRpIjoiNDY2ODQ4ZDMtYzcyYS00YjRiLTk4YWUtYjQwZDM0NDA3NWRhIiwicm9sZSI6IlN1cGVyIEFkbWluIn0.bjxAhQd417BGQ-eTzxzArEl1iTGxWC_blAg7YAiYni0
+}
+
+###
+
+### TEST 1: List companies. Expect subscriptionPlanId, subscriptionPlan (name),
+### branchLimit (3 for PAWS-A, 2147483647 for the rest), subscriptionStartDate.
+GET {{PAWS.api_HostAddress}}/api/companies
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTExMzA4NjEsImlhdCI6MTc5MTEyNzI2MSwibmJmIjoxNzkxMTI3MjYxLCJzdWIiOiIwIiwibmFtZSI6InN1cGVyYWRtaW5AcGF3cy5leGFtcGxlLmNvbSIsImVtYWlsIjoic3VwZXJhZG1pbkBwYXdzLmV4YW1wbGUuY29tIiwianRpIjoiNDY2ODQ4ZDMtYzcyYS00YjRiLTk4YWUtYjQwZDM0NDA3NWRhIiwicm9sZSI6IlN1cGVyIEFkbWluIn0.bjxAhQd417BGQ-eTzxzArEl1iTGxWC_blAg7YAiYni0
+
+###
+
+### TEST 2: Get PAWS-B only.
+GET {{PAWS.api_HostAddress}}/api/companies/2
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTExMzA4NjEsImlhdCI6MTc5MTEyNzI2MSwibmJmIjoxNzkxMTI3MjYxLCJzdWIiOiIwIiwibmFtZSI6InN1cGVyYWRtaW5AcGF3cy5leGFtcGxlLmNvbSIsImVtYWlsIjoic3VwZXJhZG1pbkBwYXdzLmV4YW1wbGUuY29tIiwianRpIjoiNDY2ODQ4ZDMtYzcyYS00YjRiLTk4YWUtYjQwZDM0NDA3NWRhIiwicm9sZSI6IlN1cGVyIEFkbWluIn0.bjxAhQd417BGQ-eTzxzArEl1iTGxWC_blAg7YAiYni0
+
+###
+
+### TEST 3: Change PAWS-B to Basic (plan ID 2). Expect "PAWS-B's plan set to Basic."
+POST {{PAWS.api_HostAddress}}/api/companies/2/subscription-plan
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTExMzA4NjEsImlhdCI6MTc5MTEyNzI2MSwibmJmIjoxNzkxMTI3MjYxLCJzdWIiOiIwIiwibmFtZSI6InN1cGVyYWRtaW5AcGF3cy5leGFtcGxlLmNvbSIsImVtYWlsIjoic3VwZXJhZG1pbkBwYXdzLmV4YW1wbGUuY29tIiwianRpIjoiNDY2ODQ4ZDMtYzcyYS00YjRiLTk4YWUtYjQwZDM0NDA3NWRhIiwicm9sZSI6IlN1cGVyIEFkbWluIn0.bjxAhQd417BGQ-eTzxzArEl1iTGxWC_blAg7YAiYni0
+Content-Type: application/json
+
+{
+  "subscriptionPlanId": 2
+}
+
+###
+
+### Confirm: should now show Basic, branchLimit 3, newer subscriptionStartDate.
+GET {{PAWS.api_HostAddress}}/api/companies/2
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTExMzA4NjEsImlhdCI6MTc5MTEyNzI2MSwibmJmIjoxNzkxMTI3MjYxLCJzdWIiOiIwIiwibmFtZSI6InN1cGVyYWRtaW5AcGF3cy5leGFtcGxlLmNvbSIsImVtYWlsIjoic3VwZXJhZG1pbkBwYXdzLmV4YW1wbGUuY29tIiwianRpIjoiNDY2ODQ4ZDMtYzcyYS00YjRiLTk4YWUtYjQwZDM0NDA3NWRhIiwicm9sZSI6IlN1cGVyIEFkbWluIn0.bjxAhQd417BGQ-eTzxzArEl1iTGxWC_blAg7YAiYni0
+
+###
+
+### PAWS-B admin login (saves token automatically)
+# @name bAdminLogin
+POST {{PAWS.api_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "companyCode": "PAWS-B",
+  "email": "admin@pawsb.example.com",
+  "password": "Bootstrap-Test-123!"
+}
+
+###
+
+### TEST 4: My plan while on Basic. Expect plan Basic, branchLimit 3.
+GET {{PAWS.api_HostAddress}}/api/branches/my-plan
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTExMzA5MjAsImlhdCI6MTc5MTEyNzMyMCwibmJmIjoxNzkxMTI3MzIwLCJzdWIiOiIxIiwibmFtZSI6IkZpcnN0IEFkbWluIiwiZW1haWwiOiJhZG1pbkBwYXdzYi5leGFtcGxlLmNvbSIsImp0aSI6IjZmMzA1YjFiLWU4ZmYtNDc2ZS05MmE4LTE3NGM5MWI4ZWU2ZCIsInJvbGUiOiJBZG1pbmlzdHJhdG9yIiwiY29tcGFueUlkIjoiMiJ9.MAX2TlmAVpjnA9PzrLId-6GswVYmF4SF3io19qkW2Hg
+
+###
+
+### TEST 5: Branch limit. PAWS-B has 4 branches, so on Basic (limit 3) this must return 400.
+POST {{PAWS.api_HostAddress}}/api/branches
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTExMzA5MjAsImlhdCI6MTc5MTEyNzMyMCwibmJmIjoxNzkxMTI3MzIwLCJzdWIiOiIxIiwibmFtZSI6IkZpcnN0IEFkbWluIiwiZW1haWwiOiJhZG1pbkBwYXdzYi5leGFtcGxlLmNvbSIsImp0aSI6IjZmMzA1YjFiLWU4ZmYtNDc2ZS05MmE4LTE3NGM5MWI4ZWU2ZCIsInJvbGUiOiJBZG1pbmlzdHJhdG9yIiwiY29tcGFueUlkIjoiMiJ9.MAX2TlmAVpjnA9PzrLId-6GswVYmF4SF3io19qkW2Hg
+Content-Type: application/json
+
+{
+  "branchName": "Limit Test Branch"
+}
+
+###
+
+### TEST 6: Bad plan ID. Expect 400 "That subscription plan does not exist."
+POST {{PAWS.api_HostAddress}}/api/companies/2/subscription-plan
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTExMzA4NjEsImlhdCI6MTc5MTEyNzI2MSwibmJmIjoxNzkxMTI3MjYxLCJzdWIiOiIwIiwibmFtZSI6InN1cGVyYWRtaW5AcGF3cy5leGFtcGxlLmNvbSIsImVtYWlsIjoic3VwZXJhZG1pbkBwYXdzLmV4YW1wbGUuY29tIiwianRpIjoiNDY2ODQ4ZDMtYzcyYS00YjRiLTk4YWUtYjQwZDM0NDA3NWRhIiwicm9sZSI6IlN1cGVyIEFkbWluIn0.bjxAhQd417BGQ-eTzxzArEl1iTGxWC_blAg7YAiYni0
+Content-Type: application/json
+
+{
+  "subscriptionPlanId": 99
+}
+
+###
+
+### RESTORE: put PAWS-B back to Premium (plan ID 3). DO THIS BEFORE YOU STOP TESTING.
+POST {{PAWS.api_HostAddress}}/api/companies/2/subscription-plan
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTExMzA4NjEsImlhdCI6MTc5MTEyNzI2MSwibmJmIjoxNzkxMTI3MjYxLCJzdWIiOiIwIiwibmFtZSI6InN1cGVyYWRtaW5AcGF3cy5leGFtcGxlLmNvbSIsImVtYWlsIjoic3VwZXJhZG1pbkBwYXdzLmV4YW1wbGUuY29tIiwianRpIjoiNDY2ODQ4ZDMtYzcyYS00YjRiLTk4YWUtYjQwZDM0NDA3NWRhIiwicm9sZSI6IlN1cGVyIEFkbWluIn0.bjxAhQd417BGQ-eTzxzArEl1iTGxWC_blAg7YAiYni0
+Content-Type: application/json
+
+{
+  "subscriptionPlanId": 3
+}
+
+###
+
+### Confirm PAWS-B is Premium again.
+GET {{PAWS.api_HostAddress}}/api/companies/2
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTExMzA4NjEsImlhdCI6MTc5MTEyNzI2MSwibmJmIjoxNzkxMTI3MjYxLCJzdWIiOiIwIiwibmFtZSI6InN1cGVyYWRtaW5AcGF3cy5leGFtcGxlLmNvbSIsImVtYWlsIjoic3VwZXJhZG1pbkBwYXdzLmV4YW1wbGUuY29tIiwianRpIjoiNDY2ODQ4ZDMtYzcyYS00YjRiLTk4YWUtYjQwZDM0NDA3NWRhIiwicm9sZSI6IlN1cGVyIEFkbWluIn0.bjxAhQd417BGQ-eTzxzArEl1iTGxWC_blAg7YAiYni0
+
+###
+
+### ===== Step 3: Subscription Plans CRUD =====
+
+### 1. List all plans. Expect Free, Basic, Premium with companyCount (Basic 1, Premium 3, Free 0).
+GET {{PAWS.api_HostAddress}}/api/subscription-plans
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTExMzA4NjEsImlhdCI6MTc5MTEyNzI2MSwibmJmIjoxNzkxMTI3MjYxLCJzdWIiOiIwIiwibmFtZSI6InN1cGVyYWRtaW5AcGF3cy5leGFtcGxlLmNvbSIsImVtYWlsIjoic3VwZXJhZG1pbkBwYXdzLmV4YW1wbGUuY29tIiwianRpIjoiNDY2ODQ4ZDMtYzcyYS00YjRiLTk4YWUtYjQwZDM0NDA3NWRhIiwicm9sZSI6IlN1cGVyIEFkbWluIn0.bjxAhQd417BGQ-eTzxzArEl1iTGxWC_blAg7YAiYni0
+
+###
+
+### 2. Get one plan.
+GET {{PAWS.api_HostAddress}}/api/subscription-plans/2
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTExMzA4NjEsImlhdCI6MTc5MTEyNzI2MSwibmJmIjoxNzkxMTI3MjYxLCJzdWIiOiIwIiwibmFtZSI6InN1cGVyYWRtaW5AcGF3cy5leGFtcGxlLmNvbSIsImVtYWlsIjoic3VwZXJhZG1pbkBwYXdzLmV4YW1wbGUuY29tIiwianRpIjoiNDY2ODQ4ZDMtYzcyYS00YjRiLTk4YWUtYjQwZDM0NDA3NWRhIiwicm9sZSI6IlN1cGVyIEFkbWluIn0.bjxAhQd417BGQ-eTzxzArEl1iTGxWC_blAg7YAiYni0
+
+###
+
+### 3. Plan that doesn't exist. Expect 404.
+GET {{PAWS.api_HostAddress}}/api/subscription-plans/99
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTExMzA4NjEsImlhdCI6MTc5MTEyNzI2MSwibmJmIjoxNzkxMTI3MjYxLCJzdWIiOiIwIiwibmFtZSI6InN1cGVyYWRtaW5AcGF3cy5leGFtcGxlLmNvbSIsImVtYWlsIjoic3VwZXJhZG1pbkBwYXdzLmV4YW1wbGUuY29tIiwianRpIjoiNDY2ODQ4ZDMtYzcyYS00YjRiLTk4YWUtYjQwZDM0NDA3NWRhIiwicm9sZSI6IlN1cGVyIEFkbWluIn0.bjxAhQd417BGQ-eTzxzArEl1iTGxWC_blAg7YAiYni0
+
+###
+
+### 4. Create a test plan. Expect 200 with the new plan (note its subscriptionPlanId).
+POST {{PAWS.api_HostAddress}}/api/subscription-plans
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTExMzA4NjEsImlhdCI6MTc5MTEyNzI2MSwibmJmIjoxNzkxMTI3MjYxLCJzdWIiOiIwIiwibmFtZSI6InN1cGVyYWRtaW5AcGF3cy5leGFtcGxlLmNvbSIsImVtYWlsIjoic3VwZXJhZG1pbkBwYXdzLmV4YW1wbGUuY29tIiwianRpIjoiNDY2ODQ4ZDMtYzcyYS00YjRiLTk4YWUtYjQwZDM0NDA3NWRhIiwicm9sZSI6IlN1cGVyIEFkbWluIn0.bjxAhQd417BGQ-eTzxzArEl1iTGxWC_blAg7YAiYni0
+Content-Type: application/json
+
+{
+  "name": "ZZ Test Plan",
+  "price": 799,
+  "branchLimit": 5,
+  "termsAndConditions": "Test plan terms. Delete-safe: only used for API testing."
+}
+
+###
+
+### 5. Duplicate name. Expect 400 "already exists".
+POST {{PAWS.api_HostAddress}}/api/subscription-plans
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTExMzA4NjEsImlhdCI6MTc5MTEyNzI2MSwibmJmIjoxNzkxMTI3MjYxLCJzdWIiOiIwIiwibmFtZSI6InN1cGVyYWRtaW5AcGF3cy5leGFtcGxlLmNvbSIsImVtYWlsIjoic3VwZXJhZG1pbkBwYXdzLmV4YW1wbGUuY29tIiwianRpIjoiNDY2ODQ4ZDMtYzcyYS00YjRiLTk4YWUtYjQwZDM0NDA3NWRhIiwicm9sZSI6IlN1cGVyIEFkbWluIn0.bjxAhQd417BGQ-eTzxzArEl1iTGxWC_blAg7YAiYni0
+Content-Type: application/json
+
+{
+  "name": "Basic",
+  "price": 100,
+  "branchLimit": 2,
+  "termsAndConditions": "Duplicate attempt."
+}
+
+###
+
+### 6. Negative price. Expect 400 "Price cannot be negative."
+POST {{PAWS.api_HostAddress}}/api/subscription-plans
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTExMzA4NjEsImlhdCI6MTc5MTEyNzI2MSwibmJmIjoxNzkxMTI3MjYxLCJzdWIiOiIwIiwibmFtZSI6InN1cGVyYWRtaW5AcGF3cy5leGFtcGxlLmNvbSIsImVtYWlsIjoic3VwZXJhZG1pbkBwYXdzLmV4YW1wbGUuY29tIiwianRpIjoiNDY2ODQ4ZDMtYzcyYS00YjRiLTk4YWUtYjQwZDM0NDA3NWRhIiwicm9sZSI6IlN1cGVyIEFkbWluIn0.bjxAhQd417BGQ-eTzxzArEl1iTGxWC_blAg7YAiYni0
+Content-Type: application/json
+
+{
+  "name": "Bad Price Plan",
+  "price": -5,
+  "branchLimit": 2,
+  "termsAndConditions": "Should be refused."
+}
+
+###
+
+### 7. Branch limit 0. Expect 400 "Branch limit must be at least 1."
+POST {{PAWS.api_HostAddress}}/api/subscription-plans
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTExMzA4NjEsImlhdCI6MTc5MTEyNzI2MSwibmJmIjoxNzkxMTI3MjYxLCJzdWIiOiIwIiwibmFtZSI6InN1cGVyYWRtaW5AcGF3cy5leGFtcGxlLmNvbSIsImVtYWlsIjoic3VwZXJhZG1pbkBwYXdzLmV4YW1wbGUuY29tIiwianRpIjoiNDY2ODQ4ZDMtYzcyYS00YjRiLTk4YWUtYjQwZDM0NDA3NWRhIiwicm9sZSI6IlN1cGVyIEFkbWluIn0.bjxAhQd417BGQ-eTzxzArEl1iTGxWC_blAg7YAiYni0
+Content-Type: application/json
+
+{
+  "name": "Bad Limit Plan",
+  "price": 100,
+  "branchLimit": 0,
+  "termsAndConditions": "Should be refused."
+}
+
+###
+
+### 8. Edit the test plan. CHANGE the 4 to the real id from step 4 if it differs.
+PUT {{PAWS.api_HostAddress}}/api/subscription-plans/4
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTExMzA4NjEsImlhdCI6MTc5MTEyNzI2MSwibmJmIjoxNzkxMTI3MjYxLCJzdWIiOiIwIiwibmFtZSI6InN1cGVyYWRtaW5AcGF3cy5leGFtcGxlLmNvbSIsImVtYWlsIjoic3VwZXJhZG1pbkBwYXdzLmV4YW1wbGUuY29tIiwianRpIjoiNDY2ODQ4ZDMtYzcyYS00YjRiLTk4YWUtYjQwZDM0NDA3NWRhIiwicm9sZSI6IlN1cGVyIEFkbWluIn0.bjxAhQd417BGQ-eTzxzArEl1iTGxWC_blAg7YAiYni0
+Content-Type: application/json
+
+{
+  "name": "ZZ Test Plan",
+  "price": 899,
+  "branchLimit": 6,
+  "termsAndConditions": "Edited terms."
+}
+
+###
+
+### 9. Deactivate the test plan (no company uses it). Expect 200.
+POST {{PAWS.api_HostAddress}}/api/subscription-plans/4/deactivate
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTExMzA4NjEsImlhdCI6MTc5MTEyNzI2MSwibmJmIjoxNzkxMTI3MjYxLCJzdWIiOiIwIiwibmFtZSI6InN1cGVyYWRtaW5AcGF3cy5leGFtcGxlLmNvbSIsImVtYWlsIjoic3VwZXJhZG1pbkBwYXdzLmV4YW1wbGUuY29tIiwianRpIjoiNDY2ODQ4ZDMtYzcyYS00YjRiLTk4YWUtYjQwZDM0NDA3NWRhIiwicm9sZSI6IlN1cGVyIEFkbWluIn0.bjxAhQd417BGQ-eTzxzArEl1iTGxWC_blAg7YAiYni0
+
+###
+
+### 10. List again. The test plan should show isActive: false.
+GET {{PAWS.api_HostAddress}}/api/subscription-plans
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTExMzA4NjEsImlhdCI6MTc5MTEyNzI2MSwibmJmIjoxNzkxMTI3MjYxLCJzdWIiOiIwIiwibmFtZSI6InN1cGVyYWRtaW5AcGF3cy5leGFtcGxlLmNvbSIsImVtYWlsIjoic3VwZXJhZG1pbkBwYXdzLmV4YW1wbGUuY29tIiwianRpIjoiNDY2ODQ4ZDMtYzcyYS00YjRiLTk4YWUtYjQwZDM0NDA3NWRhIiwicm9sZSI6IlN1cGVyIEFkbWluIn0.bjxAhQd417BGQ-eTzxzArEl1iTGxWC_blAg7YAiYni0
+
+###
+
+### 11. Assigning an INACTIVE plan to a company. Expect 400 "inactive and cannot be assigned."
+POST {{PAWS.api_HostAddress}}/api/companies/2/subscription-plan
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTExMzA4NjEsImlhdCI6MTc5MTEyNzI2MSwibmJmIjoxNzkxMTI3MjYxLCJzdWIiOiIwIiwibmFtZSI6InN1cGVyYWRtaW5AcGF3cy5leGFtcGxlLmNvbSIsImVtYWlsIjoic3VwZXJhZG1pbkBwYXdzLmV4YW1wbGUuY29tIiwianRpIjoiNDY2ODQ4ZDMtYzcyYS00YjRiLTk4YWUtYjQwZDM0NDA3NWRhIiwicm9sZSI6IlN1cGVyIEFkbWluIn0.bjxAhQd417BGQ-eTzxzArEl1iTGxWC_blAg7YAiYni0
+Content-Type: application/json
+
+{
+  "subscriptionPlanId": 4
+}
+
+###
+
+### 12. Reactivate the test plan. Expect 200.
+POST {{PAWS.api_HostAddress}}/api/subscription-plans/4/activate
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTExMzA4NjEsImlhdCI6MTc5MTEyNzI2MSwibmJmIjoxNzkxMTI3MjYxLCJzdWIiOiIwIiwibmFtZSI6InN1cGVyYWRtaW5AcGF3cy5leGFtcGxlLmNvbSIsImVtYWlsIjoic3VwZXJhZG1pbkBwYXdzLmV4YW1wbGUuY29tIiwianRpIjoiNDY2ODQ4ZDMtYzcyYS00YjRiLTk4YWUtYjQwZDM0NDA3NWRhIiwicm9sZSI6IlN1cGVyIEFkbWluIn0.bjxAhQd417BGQ-eTzxzArEl1iTGxWC_blAg7YAiYni0
+
+###
+
+### 13. Deactivate Premium, which PAWS-B/C/LOCAL use. Expect 400 "company(ies) are still on the Premium plan".
+POST {{PAWS.api_HostAddress}}/api/subscription-plans/3/deactivate
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTExMzA4NjEsImlhdCI6MTc5MTEyNzI2MSwibmJmIjoxNzkxMTI3MjYxLCJzdWIiOiIwIiwibmFtZSI6InN1cGVyYWRtaW5AcGF3cy5leGFtcGxlLmNvbSIsImVtYWlsIjoic3VwZXJhZG1pbkBwYXdzLmV4YW1wbGUuY29tIiwianRpIjoiNDY2ODQ4ZDMtYzcyYS00YjRiLTk4YWUtYjQwZDM0NDA3NWRhIiwicm9sZSI6IlN1cGVyIEFkbWluIn0.bjxAhQd417BGQ-eTzxzArEl1iTGxWC_blAg7YAiYni0
+
+###
+
+### 14. Finally, deactivate the test plan again so it doesn't clutter the demo.
+POST {{PAWS.api_HostAddress}}/api/subscription-plans/4/deactivate
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTExMzA4NjEsImlhdCI6MTc5MTEyNzI2MSwibmJmIjoxNzkxMTI3MjYxLCJzdWIiOiIwIiwibmFtZSI6InN1cGVyYWRtaW5AcGF3cy5leGFtcGxlLmNvbSIsImVtYWlsIjoic3VwZXJhZG1pbkBwYXdzLmV4YW1wbGUuY29tIiwianRpIjoiNDY2ODQ4ZDMtYzcyYS00YjRiLTk4YWUtYjQwZDM0NDA3NWRhIiwicm9sZSI6IlN1cGVyIEFkbWluIn0.bjxAhQd417BGQ-eTzxzArEl1iTGxWC_blAg7YAiYni0
+
+###
+
+### 15. A tenant admin must NOT be able to use this. Log in as PAWS-B admin...
+# @name bAdminLogin2
+POST {{PAWS.api_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "companyCode": "PAWS-B",
+  "email": "admin@pawsb.example.com",
+  "password": "Bootstrap-Test-123!"
+}
+
+###
+
+### ...then try to list plans. Expect 403 Forbidden.
+GET {{PAWS.api_HostAddress}}/api/subscription-plans
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTExMzE0ODMsImlhdCI6MTc5MTEyNzg4MywibmJmIjoxNzkxMTI3ODgzLCJzdWIiOiIxIiwibmFtZSI6IkZpcnN0IEFkbWluIiwiZW1haWwiOiJhZG1pbkBwYXdzYi5leGFtcGxlLmNvbSIsImp0aSI6IjM1ZGEzMDVkLWU5ODItNDQ0NS1iYjc2LTljNTI2NGY4YzFlZiIsInJvbGUiOiJBZG1pbmlzdHJhdG9yIiwiY29tcGFueUlkIjoiMiJ9.p-ycSYbkm2EORmnqz3GGft7E-HAXQSetFhhrZcAxYAc
+
+
+### ===== Step 4: my-plan with price, terms, remaining days =====
+
+### PAWS-B admin login
+# @name bAdminLogin3
+POST {{PAWS.api_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "companyCode": "PAWS-B",
+  "email": "admin@pawsb.example.com",
+  "password": "Bootstrap-Test-123!"
+}
+
+###
+
+### TEST A: my-plan. Expect Premium, price 1499, remainingDays 30, Premium terms text.
+GET {{PAWS.api_HostAddress}}/api/branches/my-plan
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTExMzkxNzksImlhdCI6MTc5MTEzNTU3OSwibmJmIjoxNzkxMTM1NTc5LCJzdWIiOiIxIiwibmFtZSI6IkZpcnN0IEFkbWluIiwiZW1haWwiOiJhZG1pbkBwYXdzYi5leGFtcGxlLmNvbSIsImp0aSI6IjY1ZWU4OTVlLTczZjUtNGQ2Ni1iZTU5LTA0MzFhMDUxYTY0ZSIsInJvbGUiOiJBZG1pbmlzdHJhdG9yIiwiY29tcGFueUlkIjoiMiJ9.92h2fVSPzX9a6r-V_M5OFEnx_liIxKXy1eqTaSr29eM
+
+###
+
+### TEST B: Super Admin must NOT use the tenant endpoint. Expect 403 or 401.
+GET {{PAWS.api_HostAddress}}/api/branches/my-plan
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTExMzkyMTAsImlhdCI6MTc5MTEzNTYxMCwibmJmIjoxNzkxMTM1NjEwLCJzdWIiOiIwIiwibmFtZSI6InN1cGVyYWRtaW5AcGF3cy5leGFtcGxlLmNvbSIsImVtYWlsIjoic3VwZXJhZG1pbkBwYXdzLmV4YW1wbGUuY29tIiwianRpIjoiZGJmMTQwMTQtMWU3My00Y2U1LWFmMjktYzNmNmZjYzhjOGI3Iiwicm9sZSI6IlN1cGVyIEFkbWluIn0.p42QIFQ7pM2iXOEJ32AZzS_GYeAwhiuLm_LsqWuxoko
+
+###
+
+### TEST C: Switch PAWS-B to Basic, then check my-plan again.
+### Expect Basic, price 499, remainingDays 30 (the switch restarts the cycle).
+POST {{PAWS.api_HostAddress}}/api/companies/2/subscription-plan
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTExMzkyMTAsImlhdCI6MTc5MTEzNTYxMCwibmJmIjoxNzkxMTM1NjEwLCJzdWIiOiIwIiwibmFtZSI6InN1cGVyYWRtaW5AcGF3cy5leGFtcGxlLmNvbSIsImVtYWlsIjoic3VwZXJhZG1pbkBwYXdzLmV4YW1wbGUuY29tIiwianRpIjoiZGJmMTQwMTQtMWU3My00Y2U1LWFmMjktYzNmNmZjYzhjOGI3Iiwicm9sZSI6IlN1cGVyIEFkbWluIn0.p42QIFQ7pM2iXOEJ32AZzS_GYeAwhiuLm_LsqWuxoko
+Content-Type: application/json
+
+{
+  "subscriptionPlanId": 2
+}
+
+###
+
+GET {{PAWS.api_HostAddress}}/api/branches/my-plan
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTExMzkxNzksImlhdCI6MTc5MTEzNTU3OSwibmJmIjoxNzkxMTM1NTc5LCJzdWIiOiIxIiwibmFtZSI6IkZpcnN0IEFkbWluIiwiZW1haWwiOiJhZG1pbkBwYXdzYi5leGFtcGxlLmNvbSIsImp0aSI6IjY1ZWU4OTVlLTczZjUtNGQ2Ni1iZTU5LTA0MzFhMDUxYTY0ZSIsInJvbGUiOiJBZG1pbmlzdHJhdG9yIiwiY29tcGFueUlkIjoiMiJ9.92h2fVSPzX9a6r-V_M5OFEnx_liIxKXy1eqTaSr29eM
+
+###
+
+### RESTORE: PAWS-B back to Premium.
+POST {{PAWS.api_HostAddress}}/api/companies/2/subscription-plan
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTExMzkyMTAsImlhdCI6MTc5MTEzNTYxMCwibmJmIjoxNzkxMTM1NjEwLCJzdWIiOiIwIiwibmFtZSI6InN1cGVyYWRtaW5AcGF3cy5leGFtcGxlLmNvbSIsImVtYWlsIjoic3VwZXJhZG1pbkBwYXdzLmV4YW1wbGUuY29tIiwianRpIjoiZGJmMTQwMTQtMWU3My00Y2U1LWFmMjktYzNmNmZjYzhjOGI3Iiwicm9sZSI6IlN1cGVyIEFkbWluIn0.p42QIFQ7pM2iXOEJ32AZzS_GYeAwhiuLm_LsqWuxoko
+Content-Type: application/json
+
+{
+  "subscriptionPlanId": 3
+}
+
+###
+# @name superLogin
+POST {{PAWS.api_HostAddress}}/api/auth/platform-login
+Content-Type: application/json
+
+{
+  "email": "superadmin@paws.example.com",
+  "password": "SuperAdmin-Test-123!"
+}
+
+### ===== Countdown check (PAWS-B should show remainingDays 20) =====
+
+### PAWS-B admin login
+# @name bAdminLogin4
+POST {{PAWS.api_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "companyCode": "PAWS-B",
+  "email": "admin@pawsb.example.com",
+  "password": "Bootstrap-Test-123!"
+}
+
+###
+
+### TEST A again: expect remainingDays 20, Premium, price 1499.
+GET {{PAWS.api_HostAddress}}/api/branches/my-plan
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTExMzk4ODMsImlhdCI6MTc5MTEzNjI4MywibmJmIjoxNzkxMTM2MjgzLCJzdWIiOiIxIiwibmFtZSI6IkZpcnN0IEFkbWluIiwiZW1haWwiOiJhZG1pbkBwYXdzYi5leGFtcGxlLmNvbSIsImp0aSI6ImUzZDFkODUyLTk0ZWUtNDViYy1hMDYxLTJjOWUzYmM0ZDNlYiIsInJvbGUiOiJBZG1pbmlzdHJhdG9yIiwiY29tcGFueUlkIjoiMiJ9.m5dWjd5QjMmHIbW9o5Av7fcKtoa9X-2Z6axCMOO6EKU
+
+###
+
+### Super Admin login (needed for the restore below)
+# @name superLogin2
+POST {{PAWS.api_HostAddress}}/api/auth/platform-login
+Content-Type: application/json
+
+{
+  "email": "superadmin@paws.example.com",
+  "password": "SuperAdmin-Test-123!"
+}
+
+###
+
+### RESTORE: reset PAWS-B's cycle to today (remainingDays back to 30).
+POST {{PAWS.api_HostAddress}}/api/companies/2/subscription-plan
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTExMzk5MDEsImlhdCI6MTc5MTEzNjMwMSwibmJmIjoxNzkxMTM2MzAxLCJzdWIiOiIwIiwibmFtZSI6InN1cGVyYWRtaW5AcGF3cy5leGFtcGxlLmNvbSIsImVtYWlsIjoic3VwZXJhZG1pbkBwYXdzLmV4YW1wbGUuY29tIiwianRpIjoiZTNmMjc5MzUtMTA2ZC00NzNmLWE2YTgtZGQ2ODM4MjRjMWZjIiwicm9sZSI6IlN1cGVyIEFkbWluIn0.vaJZt1ucC6qYr4exV8MEsQOOW9DKhXdItDExhlG-av8
+Content-Type: application/json
+
+{
+  "subscriptionPlanId": 3
+}
+
+###
+
+### Confirm: expect remainingDays 30 again.
+GET {{PAWS.api_HostAddress}}/api/branches/my-plan
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTExMzk4ODMsImlhdCI6MTc5MTEzNjI4MywibmJmIjoxNzkxMTM2MjgzLCJzdWIiOiIxIiwibmFtZSI6IkZpcnN0IEFkbWluIiwiZW1haWwiOiJhZG1pbkBwYXdzYi5leGFtcGxlLmNvbSIsImp0aSI6ImUzZDFkODUyLTk0ZWUtNDViYy1hMDYxLTJjOWUzYmM0ZDNlYiIsInJvbGUiOiJBZG1pbmlzdHJhdG9yIiwiY29tcGFueUlkIjoiMiJ9.m5dWjd5QjMmHIbW9o5Av7fcKtoa9X-2Z6axCMOO6EKU
+
+###
+
+### ===== Terms acceptance tests =====
+
+### PAWS-B admin login
+# @name bAdminLogin5
+POST {{PAWS.api_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "companyCode": "PAWS-B",
+  "email": "admin@pawsb.example.com",
+  "password": "Bootstrap-Test-123!"
+}
+
+###
+
+### T1: my-plan. Expect termsAccepted false, termsAcceptedAt/By null.
+GET {{PAWS.api_HostAddress}}/api/branches/my-plan
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTExNDg3NjEsImlhdCI6MTc5MTE0NTE2MSwibmJmIjoxNzkxMTQ1MTYxLCJzdWIiOiIxIiwibmFtZSI6IkZpcnN0IEFkbWluIiwiZW1haWwiOiJhZG1pbkBwYXdzYi5leGFtcGxlLmNvbSIsImp0aSI6ImUxN2Y5ODdmLWNmYmQtNDc0Yi05NzNkLTU5MGY4ZjFkNWVmMyIsInJvbGUiOiJBZG1pbmlzdHJhdG9yIiwiY29tcGFueUlkIjoiMiJ9.tsp-liNAa7Z8kMEnccskfJHpx_MR5N_ntHJuh7j9jsY
+
+###
+
+### T2: add a branch BEFORE accepting. Expect 400 "must accept the current subscription terms".
+POST {{PAWS.api_HostAddress}}/api/branches
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTExNDg3NjEsImlhdCI6MTc5MTE0NTE2MSwibmJmIjoxNzkxMTQ1MTYxLCJzdWIiOiIxIiwibmFtZSI6IkZpcnN0IEFkbWluIiwiZW1haWwiOiJhZG1pbkBwYXdzYi5leGFtcGxlLmNvbSIsImp0aSI6ImUxN2Y5ODdmLWNmYmQtNDc0Yi05NzNkLTU5MGY4ZjFkNWVmMyIsInJvbGUiOiJBZG1pbmlzdHJhdG9yIiwiY29tcGFueUlkIjoiMiJ9.tsp-liNAa7Z8kMEnccskfJHpx_MR5N_ntHJuh7j9jsY
+Content-Type: application/json
+
+{
+  "branchName": "Main Branch"
+}
+
+###
+
+### T3: accept the terms. Expect 200 "...accepted by First Admin."
+POST {{PAWS.api_HostAddress}}/api/branches/accept-terms
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTExNDg3NjEsImlhdCI6MTc5MTE0NTE2MSwibmJmIjoxNzkxMTQ1MTYxLCJzdWIiOiIxIiwibmFtZSI6IkZpcnN0IEFkbWluIiwiZW1haWwiOiJhZG1pbkBwYXdzYi5leGFtcGxlLmNvbSIsImp0aSI6ImUxN2Y5ODdmLWNmYmQtNDc0Yi05NzNkLTU5MGY4ZjFkNWVmMyIsInJvbGUiOiJBZG1pbmlzdHJhdG9yIiwiY29tcGFueUlkIjoiMiJ9.tsp-liNAa7Z8kMEnccskfJHpx_MR5N_ntHJuh7j9jsY
+
+###
+
+### T4: my-plan again. Expect termsAccepted true, termsAcceptedBy "First Admin".
+GET {{PAWS.api_HostAddress}}/api/branches/my-plan
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTExNDg3NjEsImlhdCI6MTc5MTE0NTE2MSwibmJmIjoxNzkxMTQ1MTYxLCJzdWIiOiIxIiwibmFtZSI6IkZpcnN0IEFkbWluIiwiZW1haWwiOiJhZG1pbkBwYXdzYi5leGFtcGxlLmNvbSIsImp0aSI6ImUxN2Y5ODdmLWNmYmQtNDc0Yi05NzNkLTU5MGY4ZjFkNWVmMyIsInJvbGUiOiJBZG1pbmlzdHJhdG9yIiwiY29tcGFueUlkIjoiMiJ9.tsp-liNAa7Z8kMEnccskfJHpx_MR5N_ntHJuh7j9jsY
+
+###
+
+### T5: add a branch with an EXISTING name. The terms gate is now passed, so expect
+### 400 "A branch with that name already exists." (no new branch is created).
+POST {{PAWS.api_HostAddress}}/api/branches
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTExNDg3NjEsImlhdCI6MTc5MTE0NTE2MSwibmJmIjoxNzkxMTQ1MTYxLCJzdWIiOiIxIiwibmFtZSI6IkZpcnN0IEFkbWluIiwiZW1haWwiOiJhZG1pbkBwYXdzYi5leGFtcGxlLmNvbSIsImp0aSI6ImUxN2Y5ODdmLWNmYmQtNDc0Yi05NzNkLTU5MGY4ZjFkNWVmMyIsInJvbGUiOiJBZG1pbmlzdHJhdG9yIiwiY29tcGFueUlkIjoiMiJ9.tsp-liNAa7Z8kMEnccskfJHpx_MR5N_ntHJuh7j9jsY
+Content-Type: application/json
+
+{
+  "branchName": "Main Branch"
+}
+
+###
+
+### T6: Super Admin sees the status in the company list. PAWS-B should show termsAccepted true.
+GET {{PAWS.api_HostAddress}}/api/companies/2
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTExNDg4NjMsImlhdCI6MTc5MTE0NTI2MywibmJmIjoxNzkxMTQ1MjYzLCJzdWIiOiIwIiwibmFtZSI6InN1cGVyYWRtaW5AcGF3cy5leGFtcGxlLmNvbSIsImVtYWlsIjoic3VwZXJhZG1pbkBwYXdzLmV4YW1wbGUuY29tIiwianRpIjoiZDE3ZjYyMzYtMGViOS00ZTk3LWJkNDMtYTY5ZTZlYjk3YTgwIiwicm9sZSI6IlN1cGVyIEFkbWluIn0.yahP7oICw71nwWGKGwm838PNRQaxGi05kgnRN6jChmU
+
+###
+
+### T7: Super Admin re-assigns PAWS-B to Premium (plan 3). This RESETS the acceptance.
+POST {{PAWS.api_HostAddress}}/api/companies/2/subscription-plan
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTExNDg4NjMsImlhdCI6MTc5MTE0NTI2MywibmJmIjoxNzkxMTQ1MjYzLCJzdWIiOiIwIiwibmFtZSI6InN1cGVyYWRtaW5AcGF3cy5leGFtcGxlLmNvbSIsImVtYWlsIjoic3VwZXJhZG1pbkBwYXdzLmV4YW1wbGUuY29tIiwianRpIjoiZDE3ZjYyMzYtMGViOS00ZTk3LWJkNDMtYTY5ZTZlYjk3YTgwIiwicm9sZSI6IlN1cGVyIEFkbWluIn0.yahP7oICw71nwWGKGwm838PNRQaxGi05kgnRN6jChmU
+Content-Type: application/json
+
+{
+  "subscriptionPlanId": 3
+}
+
+###
+
+### T8: my-plan again. Expect termsAccepted false (reset by the plan assignment).
+GET {{PAWS.api_HostAddress}}/api/branches/my-plan
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTExNDg3NjEsImlhdCI6MTc5MTE0NTE2MSwibmJmIjoxNzkxMTQ1MTYxLCJzdWIiOiIxIiwibmFtZSI6IkZpcnN0IEFkbWluIiwiZW1haWwiOiJhZG1pbkBwYXdzYi5leGFtcGxlLmNvbSIsImp0aSI6ImUxN2Y5ODdmLWNmYmQtNDc0Yi05NzNkLTU5MGY4ZjFkNWVmMyIsInJvbGUiOiJBZG1pbmlzdHJhdG9yIiwiY29tcGFueUlkIjoiMiJ9.tsp-liNAa7Z8kMEnccskfJHpx_MR5N_ntHJuh7j9jsY
+
+###
+
+### FINISH: accept again so PAWS-B is ready for the demo. Expect 200.
+POST {{PAWS.api_HostAddress}}/api/branches/accept-terms
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTExNDg3NjEsImlhdCI6MTc5MTE0NTE2MSwibmJmIjoxNzkxMTQ1MTYxLCJzdWIiOiIxIiwibmFtZSI6IkZpcnN0IEFkbWluIiwiZW1haWwiOiJhZG1pbkBwYXdzYi5leGFtcGxlLmNvbSIsImp0aSI6ImUxN2Y5ODdmLWNmYmQtNDc0Yi05NzNkLTU5MGY4ZjFkNWVmMyIsInJvbGUiOiJBZG1pbmlzdHJhdG9yIiwiY29tcGFueUlkIjoiMiJ9.tsp-liNAa7Z8kMEnccskfJHpx_MR5N_ntHJuh7j9jsY
+
+###
+
+### Super Admin login (saves the token automatically)
+# @name superLogin
+POST {{PAWS.api_HostAddress}}/api/auth/platform-login
+Content-Type: application/json
+
+{
+  "email": "superadmin@paws.example.com",
+  "password": "SuperAdmin-Test-123!"
+}
+
+### PAWS-LOCAL admin login
+# @name localAdminLogin
+POST {{PAWS.api_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "companyCode": "PAWS-LOCAL",
+  "email": "admin@local.paws",
+  "password": "LocalAdmin-Test-123!"
+}
+
+###
+
+### Expect termsAccepted true
+GET {{PAWS.api_HostAddress}}/api/branches/my-plan
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTExNTAxNjksImlhdCI6MTc5MTE0NjU2OSwibmJmIjoxNzkxMTQ2NTY5LCJzdWIiOiIxIiwibmFtZSI6IkxvY2FsIEFkbWluIiwiZW1haWwiOiJhZG1pbkBsb2NhbC5wYXdzIiwianRpIjoiYWZiNWU5ODQtYzVkYi00YmI2LTlkOTYtY2RjYjVlMDVmYWFmIiwicm9sZSI6IkFkbWluaXN0cmF0b3IiLCJjb21wYW55SWQiOiI0In0.prFjtSgifSgtdHA346rxAFLUhSXpjZ6sNLuWdqNJUQ4
+
+### Bootstrap the first admin for PAWS-C
+POST {{PAWS.api_HostAddress}}/api/auth/bootstrap-admin
+Content-Type: application/json
+
+{
+  "setupKey": "3LA4gOo2DESfqqCCE+EAMdzWBnJLZEyE",
+  "companyCode": "PAWS-C",
+  "fullName": "PAWS-C Admin",
+  "email": "admin@pawsc.example.com",
+  "password": "Bootstrap-Test-123!",
+  "confirmPassword": "Bootstrap-Test-123!"
+}
+
+### PAWS-C admin login
+# @name cAdminLogin
+POST {{PAWS.api_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "companyCode": "PAWS-C",
+  "email": "admin@pawsc.example.com",
+  "password": "Bootstrap-Test-123!"
+}
+
+### Seed PAWS-C (default sizes)
+POST {{PAWS.api_HostAddress}}/api/debug-seed/demo-data
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTEyMTAxNjIsImlhdCI6MTc5MTIwNjU2MiwibmJmIjoxNzkxMjA2NTYyLCJzdWIiOiIxIiwibmFtZSI6IlBBV1MtQyBBZG1pbiIsImVtYWlsIjoiYWRtaW5AcGF3c2MuZXhhbXBsZS5jb20iLCJqdGkiOiIxYjI0Yzk4Ny0zY2I5LTQ5YmMtYjY1Ni0yNjE2NWViOWFhZDgiLCJyb2xlIjoiQWRtaW5pc3RyYXRvciIsImNvbXBhbnlJZCI6IjMifQ.fh50BB456RkJcNWgRpno1hp0OEihaVJ1BRy-4hYsoc8
+
+### PAWS-C admin login
+# @name cAdminLogin2
+POST {{PAWS.api_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "companyCode": "PAWS-C",
+  "email": "admin@pawsc.example.com",
+  "password": "Bootstrap-Test-123!"
+}
+
+###
+
+### Seed PAWS-C
+POST {{PAWS.api_HostAddress}}/api/debug-seed/demo-data
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTEyMTAzNjEsImlhdCI6MTc5MTIwNjc2MSwibmJmIjoxNzkxMjA2NzYxLCJzdWIiOiIxIiwibmFtZSI6IlBBV1MtQyBBZG1pbiIsImVtYWlsIjoiYWRtaW5AcGF3c2MuZXhhbXBsZS5jb20iLCJqdGkiOiJhMWEzYWIzMC1hYmQzLTQ1ZGMtOGNmNC04NGIwNzEzNDI0ZGEiLCJyb2xlIjoiQWRtaW5pc3RyYXRvciIsImNvbXBhbnlJZCI6IjMifQ.DjNsp5huSctInJ6mDmsPRdAeSVHCLbdVH_guYtC6xmo
+
+### Register the future PAWS-A admin
+POST {{PAWS.api_HostAddress}}/api/auth/register
+Content-Type: application/json
+
+{
+  "companyCode": "PAWS-A",
+  "fullName": "PAWS-A Admin",
+  "email": "admin@pawsa.example.com",
+  "password": "Bootstrap-Test-123!",
+  "confirmPassword": "Bootstrap-Test-123!"
+}
+
+### PAWS-A admin login
+# @name aAdminLogin
+POST {{PAWS.api_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "companyCode": "PAWS-A",
+  "email": "admin@pawsa.example.com",
+  "password": "Bootstrap-Test-123!"
+}
+
+### Seed PAWS-A
+POST {{PAWS.api_HostAddress}}/api/debug-seed/demo-data
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTEyMTExMzgsImlhdCI6MTc5MTIwNzUzOCwibmJmIjoxNzkxMjA3NTM4LCJzdWIiOiI0IiwibmFtZSI6IlBBV1MtQSBBZG1pbiIsImVtYWlsIjoiYWRtaW5AcGF3c2EuZXhhbXBsZS5jb20iLCJqdGkiOiJjMzI1MDRkZC03NjFkLTQwZjItYjY5OC1hOTdhY2FmN2I5Y2UiLCJyb2xlIjoiQWRtaW5pc3RyYXRvciIsImNvbXBhbnlJZCI6IjEifQ.9jJZa3hO936iwgg_bbF4_6xzHimkMFMpXiPoLAlBqkk
+
+### PAWS-LOCAL admin login
+# @name localAdminLogin2
+POST {{PAWS.api_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "companyCode": "PAWS-LOCAL",
+  "email": "admin@local.paws",
+  "password": "LocalAdmin-Test-123!"
+}
+
+###
+
+### Seed PAWS-LOCAL (smaller sizes)
+POST {{PAWS.api_HostAddress}}/api/debug-seed/demo-data?adopterCount=10&petCount=15&applicationCount=25&requestCount=15
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTEyMTEyMzEsImlhdCI6MTc5MTIwNzYzMSwibmJmIjoxNzkxMjA3NjMxLCJzdWIiOiIxIiwibmFtZSI6IkxvY2FsIEFkbWluIiwiZW1haWwiOiJhZG1pbkBsb2NhbC5wYXdzIiwianRpIjoiNTNkNThmYmMtYWE4Zi00ZTRjLTgxY2MtZmM5Y2RjZDcyYWI5Iiwicm9sZSI6IkFkbWluaXN0cmF0b3IiLCJjb21wYW55SWQiOiI0In0.AHHKEALXdOHMOCaTjXHqUY00Sv5mv_cNs-9f1l-6IzM
+
+### ===== Payments: locked amount tests (PAWS-A) =====
+
+### 1. PAWS-A admin login (saves the token automatically)
+# @name payAdminLogin
+POST {{PAWS.api_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "companyCode": "PAWS-A",
+  "email": "admin@pawsa.example.com",
+  "password": "Bootstrap-Test-123!"
+}
+
+###
+
+### 2. List payable applications. Each one shows its adoptionFee.
+### Pick one that has a fee (not null) and note its adoptionApplicationId and adoptionFee.
+# @name payable
+GET {{PAWS.api_HostAddress}}/api/payments/payable-applications
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTEyNDQwNjMsImlhdCI6MTc5MTI0MDQ2MywibmJmIjoxNzkxMjQwNDYzLCJzdWIiOiI0IiwibmFtZSI6IlBBV1MtQSBBZG1pbiIsImVtYWlsIjoiYWRtaW5AcGF3c2EuZXhhbXBsZS5jb20iLCJqdGkiOiJlZmE4MzY4ZS0yMWEzLTRmZDctYjQ0NC02NDk0ZmViNjY2NzciLCJyb2xlIjoiQWRtaW5pc3RyYXRvciIsImNvbXBhbnlJZCI6IjEifQ.KBUl2NISWy49pgaZMf_iaw9Hl7u6PFvRHWNToTaBvHw
+
+###
+
+### 3. TAMPER: wrong amount. Expect 400 "The adoption fee for this pet is ... The amount cannot be changed."
+### Replace 5 with the adoptionApplicationId you picked in step 2.
+POST {{PAWS.api_HostAddress}}/api/payments
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTEyNDQwNjMsImlhdCI6MTc5MTI0MDQ2MywibmJmIjoxNzkxMjQwNDYzLCJzdWIiOiI0IiwibmFtZSI6IlBBV1MtQSBBZG1pbiIsImVtYWlsIjoiYWRtaW5AcGF3c2EuZXhhbXBsZS5jb20iLCJqdGkiOiJlZmE4MzY4ZS0yMWEzLTRmZDctYjQ0NC02NDk0ZmViNjY2NzciLCJyb2xlIjoiQWRtaW5pc3RyYXRvciIsImNvbXBhbnlJZCI6IjEifQ.KBUl2NISWy49pgaZMf_iaw9Hl7u6PFvRHWNToTaBvHw
+Content-Type: application/json
+
+{
+  "adoptionApplicationId": 5,
+  "type": "Adoption Fee",
+  "amount": 1,
+  "method": "Cash"
+}
+
+###
+
+### 4. TAMPER: wrong type. Expect 400 "Only Adoption Fee payments can be recorded here..."
+POST {{PAWS.api_HostAddress}}/api/payments
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTEyNDQwNjMsImlhdCI6MTc5MTI0MDQ2MywibmJmIjoxNzkxMjQwNDYzLCJzdWIiOiI0IiwibmFtZSI6IlBBV1MtQSBBZG1pbiIsImVtYWlsIjoiYWRtaW5AcGF3c2EuZXhhbXBsZS5jb20iLCJqdGkiOiJlZmE4MzY4ZS0yMWEzLTRmZDctYjQ0NC02NDk0ZmViNjY2NzciLCJyb2xlIjoiQWRtaW5pc3RyYXRvciIsImNvbXBhbnlJZCI6IjEifQ.KBUl2NISWy49pgaZMf_iaw9Hl7u6PFvRHWNToTaBvHw
+Content-Type: application/json
+
+{
+  "adoptionApplicationId": 5,
+  "type": "Donation",
+  "amount": 100,
+  "method": "Cash"
+}
+
+###
+
+### 5. Pet with no fee. Use the id of an application whose adoptionFee is null in step 2.
+### Expect 400 "This pet has no adoption fee set. Set the fee on the Pets page first."
+POST {{PAWS.api_HostAddress}}/api/payments
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTEyNDQwNjMsImlhdCI6MTc5MTI0MDQ2MywibmJmIjoxNzkxMjQwNDYzLCJzdWIiOiI0IiwibmFtZSI6IlBBV1MtQSBBZG1pbiIsImVtYWlsIjoiYWRtaW5AcGF3c2EuZXhhbXBsZS5jb20iLCJqdGkiOiJlZmE4MzY4ZS0yMWEzLTRmZDctYjQ0NC02NDk0ZmViNjY2NzciLCJyb2xlIjoiQWRtaW5pc3RyYXRvciIsImNvbXBhbnlJZCI6IjEifQ.KBUl2NISWy49pgaZMf_iaw9Hl7u6PFvRHWNToTaBvHw
+Content-Type: application/json
+
+{
+  "adoptionApplicationId": 6,
+  "type": "Adoption Fee",
+  "amount": 500,
+  "method": "Cash"
+}
+
+###
+
+### 6. CORRECT amount. Use the exact adoptionFee from step 2 (for Coco: 815).
+### Expect 200 "Payment PAY-... recorded."
+POST {{PAWS.api_HostAddress}}/api/payments
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQQVdTLndpbnVpIiwiaXNzIjoiUEFXUy5hcGkiLCJleHAiOjE3OTEyNDQwNjMsImlhdCI6MTc5MTI0MDQ2MywibmJmIjoxNzkxMjQwNDYzLCJzdWIiOiI0IiwibmFtZSI6IlBBV1MtQSBBZG1pbiIsImVtYWlsIjoiYWRtaW5AcGF3c2EuZXhhbXBsZS5jb20iLCJqdGkiOiJlZmE4MzY4ZS0yMWEzLTRmZDctYjQ0NC02NDk0ZmViNjY2NzciLCJyb2xlIjoiQWRtaW5pc3RyYXRvciIsImNvbXBhbnlJZCI6IjEifQ.KBUl2NISWy49pgaZMf_iaw9Hl7u6PFvRHWNToTaBvHw
+Content-Type: application/json
+
+{
+  "adoptionApplicationId": 5,
+  "type": "Adoption Fee",
+  "amount": 815,
+  "method": "Cash"
+}
+
+###

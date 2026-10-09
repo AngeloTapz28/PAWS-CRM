@@ -1,0 +1,392 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Page
+    x:Class="PAWS.winui.Views.MedicalRecordsPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    Loaded="Page_Loaded"
+    Unloaded="Page_Unloaded">
+
+    <Page.Resources>
+        <Style TargetType="TextBox" BasedOn="{StaticResource PawsTextBox}"/>
+        <Style TargetType="ComboBox" BasedOn="{StaticResource PawsComboBox}"/>
+    </Page.Resources>
+
+    <Grid Background="{StaticResource PawsBackgroundBrush}" Padding="32,28,32,0">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- ================= HEADER ================= -->
+        <Grid x:Name="HeaderPanel" Grid.Row="0" ColumnSpacing="16">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+
+            <StackPanel Grid.Column="0" Spacing="4">
+                <TextBlock Text="OPERATIONS" Style="{StaticResource PawsOverline}"/>
+                <TextBlock Text="Medical &amp; Vaccination Records" Style="{StaticResource PawsPageTitle}"/>
+                <TextBlock Text="Choose a pet to see its health history and vaccinations."
+                           Style="{StaticResource PawsCaption}"/>
+            </StackPanel>
+
+            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+                <ProgressRing x:Name="Busy" IsActive="False" Width="24" Height="24"/>
+                <Button x:Name="RefreshButton" Style="{StaticResource PawsSecondaryButton}" Click="Refresh_Click">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <FontIcon Glyph="&#xE72C;" FontSize="14"/>
+                        <TextBlock Text="Refresh"/>
+                    </StackPanel>
+                </Button>
+            </StackPanel>
+        </Grid>
+
+        <!-- ================= TOOLBAR: pet picker ================= -->
+        <Border x:Name="ToolbarCard" Grid.Row="1" Style="{StaticResource PawsCard}" Padding="16" Margin="0,20,0,0">
+            <ComboBox x:Name="PetSelectorBox" Header="Select a Pet" Width="340"
+                      HorizontalAlignment="Left"
+                      DisplayMemberPath="PetName"
+                      SelectionChanged="PetSelector_SelectionChanged"/>
+        </Border>
+
+        <!-- ================= MESSAGES ================= -->
+        <StackPanel Grid.Row="2" Spacing="8" Margin="0,16,0,0">
+            <InfoBar x:Name="ErrorBar" Severity="Error" IsOpen="False" IsClosable="True"/>
+            <InfoBar x:Name="SuccessBar" Severity="Success" IsOpen="False" IsClosable="True"/>
+        </StackPanel>
+
+        <!-- ================= CONTENT ================= -->
+        <ScrollViewer Grid.Row="3" VerticalScrollBarVisibility="Auto" Margin="0,8,0,0">
+            <StackPanel Spacing="16" Padding="0,8,0,32">
+
+                <!-- Shown until a pet is chosen -->
+                <StackPanel x:Name="PetPrompt" Spacing="10" HorizontalAlignment="Center" Margin="0,48,0,0">
+                    <StackPanel.Transitions>
+                        <TransitionCollection>
+                            <EntranceThemeTransition FromVerticalOffset="16"/>
+                        </TransitionCollection>
+                    </StackPanel.Transitions>
+                    <Image Source="ms-appx:///Assets/paws-icon.png" Width="72" Height="72" Opacity="0.35"/>
+                    <TextBlock x:Name="PetPromptTitle" Text="Select a pet"
+                               Style="{StaticResource PawsSectionTitle}" HorizontalAlignment="Center"/>
+                    <TextBlock x:Name="PetPromptHint" Text="Its medical and vaccination records will appear here."
+                               Style="{StaticResource PawsCaption}" HorizontalAlignment="Center"/>
+                </StackPanel>
+
+                <!-- Everything below is shown once a pet is chosen -->
+                <StackPanel x:Name="PetContent" Spacing="16" Visibility="Collapsed">
+                    <StackPanel.OpacityTransition>
+                        <ScalarTransition Duration="0:0:0.2"/>
+                    </StackPanel.OpacityTransition>
+
+                    <!-- Selected pet -->
+                    <Border x:Name="PetInfoCard" Style="{StaticResource PawsCard}" Padding="20">
+                        <StackPanel Orientation="Horizontal" Spacing="14">
+                            <Border Width="48" Height="48" CornerRadius="24"
+                                    Background="{StaticResource PawsPrimarySoftBrush}">
+                                <Image Source="ms-appx:///Assets/paws-icon.png" Width="28" Height="28"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                            <StackPanel VerticalAlignment="Center" Spacing="2">
+                                <TextBlock x:Name="SelectedPetName" Text=" " Style="{StaticResource PawsSectionTitle}"/>
+                                <TextBlock x:Name="SelectedPetSub" Text=" " Style="{StaticResource PawsCaption}"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- ===== MEDICAL RECORDS ===== -->
+                    <Border x:Name="MedicalCard" Style="{StaticResource PawsCard}" Padding="0,0,0,8">
+                        <StackPanel>
+                            <Grid Padding="24,20,24,14" ColumnSpacing="12">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+                                    <TextBlock Text="Medical Records" Style="{StaticResource PawsSectionTitle}"/>
+                                    <TextBlock x:Name="MedicalCountText" Text=" " Style="{StaticResource PawsCaption}"/>
+                                </StackPanel>
+                                <Button x:Name="AddMedicalButton" Grid.Column="1"
+                                        Style="{StaticResource PawsPrimaryButton}"
+                                        MinHeight="36" Padding="14,6"
+                                        Click="AddMedical_Click" Visibility="Collapsed">
+                                    <StackPanel Orientation="Horizontal" Spacing="8">
+                                        <FontIcon Glyph="&#xE710;" FontSize="13"/>
+                                        <TextBlock Text="Add Medical Record" FontSize="13"/>
+                                    </StackPanel>
+                                </Button>
+                            </Grid>
+
+                            <StackPanel x:Name="MedicalEmpty" Visibility="Collapsed"
+                                        Spacing="6" HorizontalAlignment="Center" Margin="0,16,0,24">
+                                <TextBlock Text="No medical records yet" Style="{StaticResource PawsSectionTitle}"
+                                           HorizontalAlignment="Center"/>
+                                <TextBlock Text="Records added by a veterinarian will appear here."
+                                           Style="{StaticResource PawsCaption}" HorizontalAlignment="Center"/>
+                            </StackPanel>
+
+                            <ItemsControl x:Name="MedicalList">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border Padding="24,14"
+                                                Background="Transparent"
+                                                BorderBrush="{StaticResource PawsBorderBrush}"
+                                                BorderThickness="0,1,0,0"
+                                                Loaded="MedicalRow_Loaded"
+                                                PointerEntered="Row_PointerEntered"
+                                                PointerExited="Row_PointerExited">
+                                            <Border.BackgroundTransition>
+                                                <BrushTransition Duration="0:0:0.12"/>
+                                            </Border.BackgroundTransition>
+
+                                            <Grid ColumnSpacing="16">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                </Grid.ColumnDefinitions>
+
+                                                <StackPanel Grid.Column="0" Spacing="6">
+                                                    <StackPanel Orientation="Horizontal" Spacing="8">
+                                                        <TextBlock Text="{Binding DateText}"
+                                                                   FontSize="14" FontWeight="SemiBold"
+                                                                   Foreground="{StaticResource PawsTextPrimaryBrush}"
+                                                                   VerticalAlignment="Center"/>
+                                                        <Border Style="{StaticResource PawsBadgeBase}"
+                                                                Background="{Binding HealthBadgeBackground}">
+                                                            <TextBlock Text="{Binding HealthLabel}"
+                                                                       Style="{StaticResource PawsBadgeTextBase}"
+                                                                       Foreground="{Binding HealthBadgeForeground}"/>
+                                                        </Border>
+                                                        <Border Style="{StaticResource PawsBadgeBase}"
+                                                                Background="{StaticResource PawsSuccessSoftBrush}"
+                                                                Visibility="{Binding FitVisibility}">
+                                                            <TextBlock Text="FIT FOR ADOPTION"
+                                                                       Style="{StaticResource PawsBadgeTextBase}"
+                                                                       Foreground="{StaticResource PawsSuccessBrush}"/>
+                                                        </Border>
+                                                    </StackPanel>
+
+                                                    <TextBlock Text="{Binding VetText}" Style="{StaticResource PawsCaption}"/>
+
+                                                    <TextBlock Text="{Binding DetailLine}"
+                                                               FontSize="13"
+                                                               Foreground="{StaticResource PawsTextPrimaryBrush}"
+                                                               TextWrapping="Wrap"
+                                                               Visibility="{Binding DetailVisibility}"/>
+
+                                                    <Border Background="{StaticResource PawsBackgroundBrush}"
+                                                            CornerRadius="8" Padding="12,8"
+                                                            Visibility="{Binding NotesVisibility}">
+                                                        <TextBlock Text="{Binding NotesText}"
+                                                                   FontSize="13"
+                                                                   Foreground="{StaticResource PawsTextSecondaryBrush}"
+                                                                   TextWrapping="Wrap"/>
+                                                    </Border>
+                                                </StackPanel>
+
+                                                <Button Grid.Column="1" Content="Edit"
+                                                        Style="{StaticResource PawsSecondaryButton}"
+                                                        MinHeight="32" Padding="14,4" FontSize="12"
+                                                        VerticalAlignment="Top"
+                                                        Click="EditMedical_Click" Tag="{Binding}"
+                                                        Visibility="{Binding EditVisibility}"/>
+                                            </Grid>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- ===== VACCINATION RECORDS ===== -->
+                    <Border x:Name="VaccineCard" Style="{StaticResource PawsCard}" Padding="0,0,0,8">
+                        <StackPanel>
+                            <Grid Padding="24,20,24,14" ColumnSpacing="12">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+                                    <TextBlock Text="Vaccination Records" Style="{StaticResource PawsSectionTitle}"/>
+                                    <TextBlock x:Name="VaccineCountText" Text=" " Style="{StaticResource PawsCaption}"/>
+                                </StackPanel>
+                                <Button x:Name="AddVaccineButton" Grid.Column="1"
+                                        Style="{StaticResource PawsPrimaryButton}"
+                                        MinHeight="36" Padding="14,6"
+                                        Click="AddVaccine_Click" Visibility="Collapsed">
+                                    <StackPanel Orientation="Horizontal" Spacing="8">
+                                        <FontIcon Glyph="&#xE710;" FontSize="13"/>
+                                        <TextBlock Text="Add Vaccination Record" FontSize="13"/>
+                                    </StackPanel>
+                                </Button>
+                            </Grid>
+
+                            <StackPanel x:Name="VaccineEmpty" Visibility="Collapsed"
+                                        Spacing="6" HorizontalAlignment="Center" Margin="0,16,0,24">
+                                <TextBlock Text="No vaccination records yet" Style="{StaticResource PawsSectionTitle}"
+                                           HorizontalAlignment="Center"/>
+                                <TextBlock Text="Vaccinations recorded by a veterinarian will appear here."
+                                           Style="{StaticResource PawsCaption}" HorizontalAlignment="Center"/>
+                            </StackPanel>
+
+                            <ItemsControl x:Name="VaccineList">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border Padding="24,14"
+                                                Background="Transparent"
+                                                BorderBrush="{StaticResource PawsBorderBrush}"
+                                                BorderThickness="0,1,0,0"
+                                                Loaded="VaccineRow_Loaded"
+                                                PointerEntered="Row_PointerEntered"
+                                                PointerExited="Row_PointerExited">
+                                            <Border.BackgroundTransition>
+                                                <BrushTransition Duration="0:0:0.12"/>
+                                            </Border.BackgroundTransition>
+
+                                            <Grid ColumnSpacing="16">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                </Grid.ColumnDefinitions>
+
+                                                <StackPanel Grid.Column="0" Spacing="6">
+                                                    <StackPanel Orientation="Horizontal" Spacing="8">
+                                                        <TextBlock Text="{Binding NameText}"
+                                                                   FontSize="14" FontWeight="SemiBold"
+                                                                   Foreground="{StaticResource PawsTextPrimaryBrush}"
+                                                                   VerticalAlignment="Center"/>
+                                                        <Border Style="{StaticResource PawsBadgeBase}"
+                                                                Background="{StaticResource PawsInfoSoftBrush}"
+                                                                Visibility="{Binding BoosterVisibility}">
+                                                            <TextBlock Text="BOOSTER"
+                                                                       Style="{StaticResource PawsBadgeTextBase}"
+                                                                       Foreground="{StaticResource PawsInfoBrush}"/>
+                                                        </Border>
+                                                        <Border Style="{StaticResource PawsBadgeBase}"
+                                                                Background="{Binding DueBadgeBackground}"
+                                                                Visibility="{Binding DueVisibility}">
+                                                            <TextBlock Text="{Binding DueLabel}"
+                                                                       Style="{StaticResource PawsBadgeTextBase}"
+                                                                       Foreground="{Binding DueBadgeForeground}"/>
+                                                        </Border>
+                                                    </StackPanel>
+
+                                                    <TextBlock Text="{Binding DetailLine}"
+                                                               FontSize="13"
+                                                               Foreground="{StaticResource PawsTextSecondaryBrush}"
+                                                               TextWrapping="Wrap"/>
+
+                                                    <TextBlock Text="{Binding NextDueText}"
+                                                               FontSize="13"
+                                                               Foreground="{StaticResource PawsTextPrimaryBrush}"
+                                                               Visibility="{Binding NextDueVisibility}"/>
+                                                </StackPanel>
+
+                                                <Button Grid.Column="1" Content="Edit"
+                                                        Style="{StaticResource PawsSecondaryButton}"
+                                                        MinHeight="32" Padding="14,4" FontSize="12"
+                                                        VerticalAlignment="Top"
+                                                        Click="EditVaccine_Click" Tag="{Binding}"
+                                                        Visibility="{Binding EditVisibility}"/>
+                                            </Grid>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+                    </Border>
+
+                </StackPanel>
+            </StackPanel>
+        </ScrollViewer>
+
+        <!-- =====================================================================
+             FORM POPUP: sits on top of the whole page. Only one panel shows at a
+             time. The overlay itself is shown/hidden from code (WatchPanel).
+             ===================================================================== -->
+        <Grid x:Name="FormOverlay"
+              Grid.RowSpan="4"
+              Margin="-32,-28,-32,0"
+              Background="#8C1F2A44"
+              Visibility="Collapsed">
+
+            <!-- Medical record form -->
+            <Border x:Name="MedicalFormPanel" Visibility="Collapsed"
+                    Style="{StaticResource PawsCard}" Padding="24"
+                    MaxWidth="620" Margin="24,96,24,24"
+                    HorizontalAlignment="Stretch" VerticalAlignment="Center">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel Spacing="12" Padding="0,0,12,0">
+                        <TextBlock x:Name="MedicalFormTitle" Text="Add Medical Record"
+                                   Style="{StaticResource PawsSectionTitle}"/>
+                        <DatePicker x:Name="ExamDatePicker" Header="Examination Date"/>
+                        <ComboBox x:Name="HealthStatusBox" Header="Health Status" HorizontalAlignment="Stretch">
+                            <ComboBoxItem Content="Excellent"/>
+                            <ComboBoxItem Content="Good"/>
+                            <ComboBoxItem Content="Fair"/>
+                            <ComboBoxItem Content="Poor"/>
+                            <ComboBoxItem Content="Critical"/>
+                        </ComboBox>
+                        <TextBox x:Name="DiagnosisBox" Header="Diagnosis (optional)"/>
+                        <TextBox x:Name="SymptomsBox" Header="Symptoms (optional)" AcceptsReturn="True" Height="80"/>
+                        <TextBox x:Name="TreatmentBox" Header="Treatment (optional)" AcceptsReturn="True" Height="80"/>
+                        <TextBox x:Name="MedicationsBox" Header="Medications (optional)"/>
+                        <TextBox x:Name="WeightBox" Header="Weight at Exam, kg (optional)"/>
+                        <CheckBox x:Name="FitForAdoptionBox" Content="Fit for adoption"/>
+                        <TextBox x:Name="MedicalNotesBox" Header="Notes (optional)" AcceptsReturn="True" Height="80"/>
+                        <DatePicker x:Name="NextCheckupDatePicker" Header="Next Checkup Date (optional)"/>
+                        <CheckBox x:Name="NoNextCheckupBox" Content="No next checkup scheduled"
+                                  Checked="NoNextCheckup_Changed" Unchecked="NoNextCheckup_Changed"/>
+                        <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,4,0,0">
+                            <Button x:Name="SaveMedicalButton" Content="Save"
+                                    Style="{StaticResource PawsPrimaryButton}" Click="SaveMedical_Click"/>
+                            <Button Content="Cancel" Style="{StaticResource PawsSecondaryButton}"
+                                    Click="CancelMedicalForm_Click"/>
+                        </StackPanel>
+                    </StackPanel>
+                </ScrollViewer>
+            </Border>
+
+            <!-- Vaccination record form -->
+            <Border x:Name="VaccineFormPanel" Visibility="Collapsed"
+                    Style="{StaticResource PawsCard}" Padding="24"
+                    MaxWidth="620" Margin="24,96,24,24"
+                    HorizontalAlignment="Stretch" VerticalAlignment="Center">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel Spacing="12" Padding="0,0,12,0">
+                        <TextBlock x:Name="VaccineFormTitle" Text="Add Vaccination Record"
+                                   Style="{StaticResource PawsSectionTitle}"/>
+                        <TextBox x:Name="VaccineNameBox" Header="Vaccine Name"/>
+                        <TextBox x:Name="ManufacturerBox" Header="Manufacturer (optional)"/>
+                        <TextBox x:Name="BatchNumberBox" Header="Batch Number (optional)"/>
+                        <DatePicker x:Name="DateAdministeredPicker" Header="Date Administered"/>
+                        <DatePicker x:Name="NextDueDatePicker" Header="Next Due Date (optional)"/>
+                        <CheckBox x:Name="NoNextDueBox" Content="No next dose scheduled"
+                                  Checked="NoNextDue_Changed" Unchecked="NoNextDue_Changed"/>
+                        <CheckBox x:Name="IsBoosterBox" Content="This is a booster dose"/>
+                        <TextBox x:Name="VaccineNotesBox" Header="Notes (optional)" AcceptsReturn="True" Height="80"/>
+                        <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,4,0,0">
+                            <Button x:Name="SaveVaccineButton" Content="Save"
+                                    Style="{StaticResource PawsPrimaryButton}" Click="SaveVaccine_Click"/>
+                            <Button Content="Cancel" Style="{StaticResource PawsSecondaryButton}"
+                                    Click="CancelVaccineForm_Click"/>
+                        </StackPanel>
+                    </StackPanel>
+                </ScrollViewer>
+            </Border>
+
+            <!-- Error bar shown inside the popup -->
+            <InfoBar x:Name="PopupErrorBar"
+                     Severity="Error"
+                     IsOpen="False"
+                     IsClosable="True"
+                     VerticalAlignment="Top"
+                     HorizontalAlignment="Center"
+                     MaxWidth="620"
+                     Margin="24,24,24,0"/>
+        </Grid>
+    </Grid>
+</Page>
